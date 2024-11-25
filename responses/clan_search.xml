@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clan result="00">
+    <list results="1" total="1">
+        <info id="123456">
+            <name>Development</name>
+            <tag>Dev</tag>
+            <members>1</members>
+        </info>
+    </list>
+</clan>

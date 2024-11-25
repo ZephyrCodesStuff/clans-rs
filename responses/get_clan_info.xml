@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<clan result="00">
+    <info id="123456">
+        <name>Development</name>
+        <tag>Dev</tag>
+        <members>1</members>
+        <date-created>2010-07-31T05:14:40Z</date-created>
+        <description>knight sux</description>
+        <auto-accept>0</auto-accept>
+        <int-attr1>0</int-attr1>
+        <int-attr2>0</int-attr2>
+        <int-attr3>0</int-attr3>
+        <size>0</size>
+    </info>
+</clan>
