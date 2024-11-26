@@ -1,10 +1,11 @@
-//! A module for the response structs that the Clans firmware library
-//! expects to receive from the server, in XML format.
+//! Base XML structs for the responses of the API,
+//! wrapping the XML entities inside.
 
 use actix_web::{http::StatusCode, Responder};
 use serde::Serialize;
+use xml::{writer::XmlEvent, EmitterConfig};
 
-use crate::utils::xml_format::ToXml;
+use crate::utils::xml_format::ToXML;
 
 /// Default headers for the response.
 const HEADERS: [(&str, &str); 3] = [
@@ -12,46 +13,6 @@ const HEADERS: [(&str, &str); 3] = [
 	("Version", "1.00"),
 	("Content-Type", "application/x-ps3-clan"),
 ];
-
-/// An XML abstraction for a generic list of items.
-/// 
-/// ```xml
-/// <list results="{results}" total="{total}">
-///     ...
-/// </list>
-/// ```
-#[derive(Debug)]
-pub struct List<T: ToXml> {
-    /// Number of items in the current response.
-    pub results: u32,
-
-    /// Total number of items existing in the server.
-    pub total: u32,
-
-    /// List of items.
-    pub items: Vec<T>
-}
-
-impl<T: ToXml> ToXml for List<T> {
-	fn to_xml(&self, name: Option<&str>) -> String {
-		let mut xml = format!("<list results=\"{}\" total=\"{}\">", self.results, self.total);
-		for item in &self.items {
-			xml.push_str(&item.to_xml(name));
-		}
-		xml.push_str("</list>");
-		xml
-	}
-}
-
-impl<T: ToXml> ToXml for Vec<T> {
-	fn to_xml(&self, name: Option<&str>) -> String {
-		let mut xml = String::new();
-		for item in self {
-			xml.push_str(&item.to_xml(name));
-		}
-		xml
-	}
-}
 
 /// A generic clan response, with a status code and content.
 /// 
@@ -61,7 +22,7 @@ impl<T: ToXml> ToXml for Vec<T> {
 /// </clan>
 /// ```
 #[derive(Debug)]
-pub struct Response<T: ToXml> {
+pub struct Response<T: ToXML> {
     /// Status code of the response.
     status: Status,
 
@@ -69,13 +30,27 @@ pub struct Response<T: ToXml> {
     content: Content<T>
 }
 
-impl<T: ToXml> ToXml for Response<T> {
-	fn to_xml(&self, name: Option<&str>) -> String {
-		format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?><clan result=\"{}\">{}</clan>", self.status, self.content.to_xml(name))
+impl<T: ToXML> ToXML for Response<T> {
+	fn to_xml(&self) -> String {
+		let mut writer = EmitterConfig::new()
+			.perform_indent(false)
+			.write_document_declaration(true);
+
+		// Disable escaping to write the nested XML elements.
+		writer.perform_escaping = false;
+
+		let mut writer = writer.create_writer(Vec::new());
+
+		writer.write(XmlEvent::start_element("clan").attr("result", &self.status.to_string())).ok();
+		writer.write(XmlEvent::characters(&self.content.to_xml())).ok();
+		writer.write(XmlEvent::end_element()).ok();
+
+		let result = writer.into_inner();
+		String::from_utf8(result).unwrap()
 	}
 }
 
-impl<T: ToXml> Responder for Response<T> {
+impl<T: ToXML> Responder for Response<T> {
     type Body = actix_web::body::BoxBody;
 
     fn respond_to(self, _: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
@@ -89,11 +64,11 @@ impl<T: ToXml> Responder for Response<T> {
 			builder.append_header((*key, *value));
 		}
 
-		builder.body::<String>(self.to_xml(None))
+		builder.body::<String>(self.to_xml())
     }
 }
 
-impl<T: ToXml> Response<T> {
+impl<T: ToXML> Response<T> {
 	/// Create a new successful response.
 	pub const fn success(content: Content<T>) -> Self {
 		Self {
@@ -224,68 +199,78 @@ impl Into<StatusCode> for ErrorCode {
 
 /// An XML abstraction for the content of a response.
 #[derive(Debug)]
-pub enum Content<T: ToXml> {
+pub enum Content<T: ToXML> {
 	/// A single item.
-	Item(Entity<T>),
+	Item(T),
 
 	/// A list of items.
-	List(List<Entity<T>>),
+	List(List<T>),
 
 	/// Nothing.
 	Empty
 }
 
-impl ToXml for () {
-	fn to_xml(&self, _: Option<&str>) -> String {
+impl ToXML for () {
+	fn to_xml(&self) -> String {
 		String::new()
 	}
 }
 
-impl<T: ToXml> ToXml for Content<T> {
-	fn to_xml(&self, name: Option<&str>) -> String {
+impl<T: ToXML> ToXML for Content<T> {
+	fn to_xml(&self) -> String {
 		match self {
-			Self::Item(item) => item.to_xml(name),
-			Self::List(list) => list.to_xml(name),
+			Self::Item(item) => item.to_xml(),
+			Self::List(list) => list.to_xml(),
 			Self::Empty => String::new()
 		}
 	}
 }
 
-/// An XML abstraction for a single item.
-/// Represents the XML element's tag name.
+/// An XML abstraction for a generic list of items.
 /// 
-/// This is needed because the game expects the same tag name
-/// even for different types of entities.
+/// ```xml
+/// <list results="{results}" total="{total}">
+///     ...
+/// </list>
+/// ```
 #[derive(Debug)]
-pub enum Entity<T> {
-	/// Translates to:
-	/// 
-	/// ```xml
-	/// <id>{id}</id>
-	/// ```
-	Id(T),
+pub struct List<T: ToXML> {
+    /// Number of items in the current response.
+    pub results: u32,
 
-	/// Translates to:
-	/// 
-	/// ```xml
-	/// <entry ...>{entry}</entry>
-	/// ```
-	Entry(T),
+    /// Total number of items existing in the server.
+    pub total: u32,
 
-	/// Translates to:
-	/// 
-	/// ```xml
-	/// <info ...>{info}</info>
-	/// ```
-	Info(T),
+    /// List of items.
+    pub items: Vec<T>
 }
 
-impl<T: ToXml> ToXml for Entity<T> {
-	fn to_xml(&self, _: Option<&str>) -> String {
-		match self {
-			Self::Id(item) => item.to_xml(Some("id")),
-			Self::Entry(item) => item.to_xml(Some("entry")),
-			Self::Info(clan) => clan.to_xml(Some("info")),
+impl<T: ToXML> ToXML for List<T> {
+	fn to_xml(&self) -> String {
+		let mut writer = EmitterConfig::new()
+			.perform_indent(false)
+			.write_document_declaration(false);
+
+		// Disable escaping to write the nested XML elements.
+		writer.perform_escaping = false;
+
+		let mut writer = writer.create_writer(Vec::new());
+
+		let results = self.results.to_string();
+		let total = self.total.to_string();
+
+		let element = XmlEvent::start_element("list")
+			.attr("results", &results)
+			.attr("total", &total);
+		writer.write(element).ok();
+
+		for item in &self.items {
+			writer.write(XmlEvent::characters(&item.to_xml())).ok();
 		}
+
+		writer.write(XmlEvent::end_element()).ok();
+
+		let result = writer.into_inner();
+		String::from_utf8(result).unwrap()
 	}
 }

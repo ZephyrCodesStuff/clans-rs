@@ -12,7 +12,7 @@ pub struct Database {
     database: mongodb::Database,
 
     /// Collection of clans.
-    clans: mongodb::Collection<Clan>,
+    pub clans: mongodb::Collection<Clan>,
 }
 
 impl Database {

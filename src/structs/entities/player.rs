@@ -2,7 +2,7 @@
 
 use std::fmt::Display;
 
-use crate::utils::xml_format::ToXml;
+use serde::{Deserialize, Serialize};
 
 /// A JID is a string composed of a ``username`` and the
 /// ``PlayStation`` region server the account is based on.
@@ -10,23 +10,8 @@ use crate::utils::xml_format::ToXml;
 /// Example: ``username@a1.us.np.playstation.net``
 pub type Jid = String;
 
-/// Represents the basic information for a player,
-/// needed to display it in a search result.
-pub struct BasicInfo {
-    /// The player's JID.
-    pub jid: Jid,
-}
-
-impl ToXml for BasicInfo {
-    fn to_xml(&self, name: Option<&str>) -> String {
-        format!(
-            r#"<{}><jid>{}</jid></{}>"#,
-            name.unwrap_or("entry"), self.jid, name.unwrap_or("entry")
-        )
-    }
-}
-
 /// A player's role in the clan.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Role {
     /// The player's role is unknown.
     /// 
@@ -61,7 +46,7 @@ impl Display for Role {
 }
 
 /// A player's status pertaining to the clan.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum Status {
     /// The player's status is unknown.
@@ -93,6 +78,7 @@ impl Display for Status {
 }
 
 /// Represents a player in the game.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
     /// The player's JID.
     pub jid: Jid,
@@ -107,13 +93,18 @@ pub struct Player {
     /// 
     /// Currently it is unknown where this is displayed.
     pub description: String,
+
+    /// The ``allowMsg`` flag determines whether the member allows receiving
+    /// messages viewable in the system software, whenever a post has been
+    /// made to the clan's announcement board.
+    /// 
+    /// The default value for ``allowMsg`` is ``false``.
+    pub allow_msg: bool,
 }
 
-impl ToXml for Player {
-    fn to_xml(&self, name: Option<&str>) -> String {
-        format!(
-            r#"<{} jid="{}"><role>{}</role><status>{}</status><description>{}</description></{}>"#,
-            name.unwrap_or("player"), self.jid, self.role, self.status, self.description, name.unwrap_or("player")
-        )
+impl Player {
+    /// The player's username.
+    pub fn username(&self) -> &str {
+        self.jid.split('@').next().unwrap_or_default()
     }
 }
