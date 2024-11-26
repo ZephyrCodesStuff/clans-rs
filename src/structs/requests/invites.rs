@@ -31,3 +31,13 @@ pub struct CancelInvitation {
     /// The JID of the player to cancel the invitation for.
     pub jid: Jid,
 }
+
+/// Request to join a clan.
+#[derive(Debug, Deserialize)]
+pub struct RequestMembership {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+}

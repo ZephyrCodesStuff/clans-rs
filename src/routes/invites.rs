@@ -1,9 +1,9 @@
 //! TODO: document this
 
-use actix_web::{post, web::{Bytes, Data}};
+use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::player::{Player, Role, Status}, requests::{base::Request, invites::{CancelInvitation, SendInvitation}}, responses::base::{Content, ErrorCode, Response}}};
+use crate::{database::Database, structs::{entities::player::{Jid, Player, Role, Status}, requests::{base::Request, invites::{CancelInvitation, RequestMembership, SendInvitation}}, responses::base::{Content, ErrorCode, Response}}};
 
 /// Invite a player to a clan.
 #[post("/clan_manager_update/sec/send_invitation")]
@@ -62,9 +62,33 @@ pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvi
 
 /// Request to join a clan.
 #[post("/clan_manager_update/sec/request_membership")]
-pub async fn request_membership(bytes: Bytes) -> Response<()> {
-    log::warn!("TODO: Implement request_membership");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn request_membership(database: Data<Database>, req: Request<RequestMembership>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
+
+    let mut clan = clan.unwrap();
+
+    // Request membership
+    let player = Player {
+        jid,
+        role: Role::NonMember,
+        status: Status::Pending,
+        ..Default::default()
+    };
+
+    clan.members.push(player);
+
+    // Update the clan
+    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+    }
 
     Response::success(Content::Empty)
 }
