@@ -57,9 +57,11 @@ async fn main() -> std::io::Result<()> {
 
             // Members
             .service(routes::members::get_member_list)
+            .service(routes::members::get_member_info)
 
             // Announcements
             .service(routes::announcements::retrieve_announcements)
+            .service(routes::announcements::post_announcement)
 
             // Invites
             .service(routes::invites::send_invitation)

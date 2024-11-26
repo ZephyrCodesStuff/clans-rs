@@ -19,3 +19,12 @@ pub async fn retrieve_announcements(bytes: Bytes) -> Response<()> {
 
     Response::success(Content::List(list))
 }
+
+/// Publish a new announcement for a clan.
+#[post("/clan_manager_update/sec/post_announcement")]
+pub async fn post_announcement(bytes: Bytes) -> Response<()> {
+    log::warn!("TODO: Implement post_announcement");
+    log::debug!("{}", String::from_utf8_lossy(&bytes));
+
+    Response::success(Content::Empty)
+}

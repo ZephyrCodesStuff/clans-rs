@@ -5,3 +5,4 @@ pub mod clans;
 pub mod members;
 pub mod blacklist;
 pub mod invites;
+pub mod announcements;

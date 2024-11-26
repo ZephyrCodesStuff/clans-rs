@@ -5,7 +5,7 @@
 //! - Removing a player from a clan
 //! - ...
 
-use actix_web::{post, web::Data};
+use actix_web::{post, web::{Bytes, Data}};
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
@@ -45,4 +45,13 @@ pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberLis
     };
 
     Response::success(Content::List(list))
+}
+
+/// Get info about a clan member.
+#[post("/clan_manager_view/sec/get_member_info")]
+pub async fn get_member_info(bytes: Bytes) -> Response<()> {
+    log::warn!("TODO: Implement get_member_info");
+    log::debug!("{}", String::from_utf8_lossy(&bytes));
+
+    Response::success(Content::Empty)
 }
