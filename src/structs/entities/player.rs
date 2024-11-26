@@ -2,9 +2,10 @@
 
 use std::fmt::Display;
 
+use actix_web::FromRequest;
 use serde::{Deserialize, Serialize};
 
-use super::ticket::Ticket;
+use crate::structs::ticket::Ticket;
 
 /// A JID is an identifier composed of:
 /// 
@@ -80,6 +81,20 @@ impl From<Ticket> for Jid {
             region: ticket.region,
             domain: ticket.domain,
         }
+    }
+}
+
+impl FromRequest for Jid {
+    type Error = actix_web::Error;
+    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>> + 'static>>;
+
+    /// Get the JID from the request body, by extracting the Ticket.
+    fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
+        let fut = Ticket::from_request(req, payload);
+        Box::pin(async move {
+            let ticket = fut.await?;
+            Ok(Self::from(ticket))
+        })
     }
 }
 

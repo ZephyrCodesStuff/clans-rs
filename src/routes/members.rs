@@ -5,30 +5,19 @@
 //! - Removing a player from a clan
 //! - ...
 
-use actix_web::{post, web::Data};
+use actix_web::post;
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{
-    requests::{base::Request, members::GetMemberList}, responses::{
-        base::{Content, ErrorCode, List, Response},
-        entities::PlayerInfo,
+use crate::structs::{
+    entities::clan::Clan, requests::{base::Request, members::GetMemberList}, responses::{
+        base::{Content, List, Response}, entities::PlayerInfo
     }
-}};
+};
 
 /// Get a clan's members.
 #[post("/clan_manager_view/sec/get_member_list")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberList>) -> Response<PlayerInfo> {
-    // Find the clan
-    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
-
-    if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
-    }
-
-    let clan = clan.unwrap();
-
+pub async fn get_member_list(req: Request<GetMemberList>, clan: Clan) -> Response<PlayerInfo> {
     // Collect all valid entries
     let items = clan.members
         .iter()
