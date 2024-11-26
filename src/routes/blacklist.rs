@@ -9,15 +9,26 @@ use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
-    entities::{clan::Clan, player::Jid}, requests::{base::Request, blacklist::{DeleteBlacklistEntry, GetBlacklist, RecordBlacklistEntry}}, responses::{
-        base::{Content, List, Response}, entities::BlacklistEntry, error::ErrorCode
+    entities::player::Jid, requests::{base::Request, blacklist::{DeleteBlacklistEntry, GetBlacklist, RecordBlacklistEntry}}, responses::{
+        base::{Content, List, Response},
+        entities::BlacklistEntry, error::ErrorCode,
     }
 }};
 
 /// Get a clan's blacklist.
 #[post("/clan_manager_view/sec/get_blacklist")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn get_blacklist(req: Request<GetBlacklist>, clan: Clan) -> Response<BlacklistEntry> {
+pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>) -> Response<BlacklistEntry> {
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let clan = clan.unwrap();
+
     // Collect all valid entries
     let items = clan.blacklist
         .iter()
@@ -38,9 +49,21 @@ pub async fn get_blacklist(req: Request<GetBlacklist>, clan: Clan) -> Response<B
 
 /// Add a player to a clan's blacklist.
 #[post("/clan_manager_update/sec/record_blacklist_entry")]
-pub async fn record_blacklist_entry(database: Data<Database>, req: Request<RecordBlacklistEntry>, mut clan: Clan, user: Jid) -> Response<()> {
+pub async fn record_blacklist_entry(database: Data<Database>, req: Request<RecordBlacklistEntry>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let mut clan = clan.unwrap();
+
     // Check if the user is allowed to add to the blacklist
-    if !clan.is_mod(&user) {
+    if !clan.is_mod(&jid) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -53,16 +76,30 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     clan.blacklist.push(Jid::from(req.request.jid));
 
     // Update the clan
-    if let Err(e) = clan.save(&database).await { return Response::error(e); }
+    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
+        return Response::error(ErrorCode::InternalServerError);
+    }
 
     Response::success(Content::Empty)
 }
 
 /// Remove a player from a clan's blacklist.
 #[post("/clan_manager_update/sec/delete_blacklist_entry")]
-pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<DeleteBlacklistEntry>, mut clan: Clan, user: Jid) -> Response<()> {
+pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<DeleteBlacklistEntry>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let mut clan = clan.unwrap();
+
     // Check if the user is allowed to remove from the blacklist
-    if !clan.is_mod(&user) {
+    if !clan.is_mod(&jid) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -75,7 +112,9 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     clan.blacklist.retain(|j| j != &Jid::from(req.request.jid.clone()));
 
     // Update the clan
-    if let Err(e) = clan.save(&database).await { return Response::error(e); }
+    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
+        return Response::error(ErrorCode::InternalServerError);
+    }
 
     Response::success(Content::Empty)
 }

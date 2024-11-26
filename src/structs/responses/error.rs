@@ -7,7 +7,7 @@ use serde::Serialize;
 pub const SUCCESS: u8 = 0x00;
 
 /// Error codes for the Clans operations.
-#[allow(dead_code)]
+#[allow(dead_code, clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy, Serialize)]
 #[repr(u8)]
 pub enum ErrorCode {

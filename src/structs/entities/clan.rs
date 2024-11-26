@@ -3,13 +3,13 @@
 //! 
 //! They are what's stored into the database.
 
-use actix_web::{web::{Buf, Data}, FromRequest};
+use actix_web::web::Data;
 use chrono::{DateTime, Utc};
 use mongodb::bson::doc;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::Database, structs::{requests::base::Request, responses::error::ErrorCode}};
+use crate::{database::Database, structs::responses::error::ErrorCode};
 
 use super::player::{Jid, Player, Role, Status};
 
@@ -106,44 +106,6 @@ impl Default for Clan {
     }
 }
 
-/// Extractor helper, to parse the XML body of the request as such:
-/// ```xml
-/// <clan>
-///     <id>{id}</id>
-/// </clan>
-/// ```
-#[derive(Debug, Deserialize)]
-pub struct IdOnly {
-    /// The ID of the clan.
-    pub id: Id,
-}
-
-/// Implement an extractor for the clan, from the request
-impl FromRequest for Clan {
-    type Error = actix_web::Error;
-    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>> + 'static>>;
-    
-    /// Get the clan ID from the request body, then fetch the clan from the database.
-    fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-        let fut = actix_web::web::Bytes::from_request(req, payload);
-        let database = req.app_data::<Data<Database>>().unwrap().clone();
-
-        Box::pin(async move {
-            let bytes = fut.await?;
-
-            let request: Request<IdOnly> = serde_xml_rs::from_reader(bytes.reader())
-                .map_err(actix_web::error::ErrorInternalServerError)?;
-
-            let clan_id = request.request.id;
-
-            // Fetch the clan from the database
-            let Ok(Some(clan)) = database.clans.find_one(doc! { "id": clan_id }).await
-            else { return Err(actix_web::error::ErrorInternalServerError("Failed to fetch the clan while trying to extract it from the request.")) };
-
-            Ok(clan)
-        })
-    }
-}
 
 impl Clan {
     /// Save the clan in the database.

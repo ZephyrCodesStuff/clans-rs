@@ -4,7 +4,6 @@
 //! username, alongside other data, which we can use to identify them.
 
 
-use actix_web::{web::Buf, FromRequest};
 use base64::Engine;
 use serde::{Deserialize, Deserializer};
 
@@ -54,36 +53,6 @@ impl<'de> Deserialize<'de> for Ticket {
             .map_err(serde::de::Error::custom)?;
 
         Ok(ticket)
-    }
-}
-
-/// Extractor helper, to parse the XML body of the request as such:
-/// ```xml
-/// <clan>
-///     <id>{id}</id>
-/// </clan>
-/// ```
-#[derive(Debug, Deserialize)]
-pub struct TicketOnly {
-    /// The ID of the clan.
-    pub ticket: Ticket,
-}
-
-impl FromRequest for Ticket {
-    type Error = actix_web::Error;
-    type Future = std::pin::Pin<Box<dyn std::future::Future<Output = Result<Self, Self::Error>> + 'static>>;
-
-    /// Get the ticket from the request body.
-    fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-        let fut = actix_web::web::Bytes::from_request(req, payload);
-        Box::pin(async move {
-            let bytes = fut.await?;
-
-            let request: TicketOnly = serde_xml_rs::from_reader(bytes.reader())
-                .map_err(actix_web::error::ErrorInternalServerError)?;
-
-            Ok(request.ticket)
-        })
     }
 }
 

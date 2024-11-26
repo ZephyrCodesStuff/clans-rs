@@ -3,28 +3,25 @@
 use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
-use crate::{
-    database::Database,
-    structs::{
-        entities::{clan::Clan, player::{Jid, Player, Role, Status}},
-        requests::{
-            base::Request,
-            invites::{CancelInvitation, SendInvitation},
-        },
-        responses::{base::{Content, Response}, error::ErrorCode},
-    },
-};
+use crate::{database::Database, structs::{entities::player::{Jid, Player, Role, Status}, requests::{base::Request, invites::{CancelInvitation, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
 
 /// Invite a player to a clan.
 #[post("/clan_manager_update/sec/send_invitation")]
-pub async fn send_invitation(
-    database: Data<Database>,
-    req: Request<SendInvitation>,
-    mut clan: Clan,
-    user: Jid
-) -> Response<()> {
+pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitation>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let mut clan = clan.unwrap();
+
     // Check if the user has been blacklisted
-    if clan.is_blacklisted(&user) {
+    if clan.is_blacklisted(&jid) {
         return Response::error(ErrorCode::Blacklisted);
     }
 
@@ -44,25 +41,24 @@ pub async fn send_invitation(
     clan.members.push(player);
 
     // Update the clan
-    if database
-        .clans
-        .replace_one(doc! { "id": clan.id() }, clan)
-        .await
-        .is_err()
-    {
-        return Response::error(ErrorCode::InternalServerError);
-    }
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
 
     Response::success(Content::Empty)
 }
 
 /// Cancel an invitation to a player.
 #[post("/clan_manager_update/sec/cancel_invitation")]
-pub async fn cancel_invitation(
-    database: Data<Database>,
-    req: Request<CancelInvitation>,
-    mut clan: Clan
-) -> Response<()> {
+pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvitation>) -> Response<()> {
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let mut clan = clan.unwrap();
+
     // Check if there actually is an invitation
     let member = clan.members.iter().find(|m| m.jid == req.request.jid);
     if member.is_none() {
@@ -84,27 +80,35 @@ pub async fn cancel_invitation(
 
 /// Request to join a clan.
 #[post("/clan_manager_update/sec/request_membership")]
-pub async fn request_membership(
-    database: Data<Database>,
-    mut clan: Clan,
-    user: Jid
-) -> Response<()> {
+pub async fn request_membership(database: Data<Database>, req: Request<RequestMembership>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::NoSuchClan);
+    }
+
+    let mut clan = clan.unwrap();
+
     // Check if the user has already been invited or is already pending approval
-    let member = clan.members.iter().find(|m| m.jid == user);
+    let member = clan.members.iter().find(|m| m.jid == jid);
     if let Some(member) = member {
         if member.status == Status::Invited || member.status == Status::Pending {
-            return Response::error(ErrorCode::BadRequest);
+            return Response::error(ErrorCode::MemberStatusInvalid);
         }
     }
 
     // Check if the user has been blacklisted
-    if clan.is_blacklisted(&user) {
+    if clan.is_blacklisted(&jid) {
         return Response::error(ErrorCode::Blacklisted);
     }
 
     // Request membership
     let player = Player {
-        jid: user,
+        jid,
         role: Role::NonMember,
         status: Status::Pending,
         ..Default::default()

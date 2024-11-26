@@ -2,12 +2,18 @@
 
 use serde::Deserialize;
 
-use crate::structs::entities::player::Jid;
+use crate::structs::{entities::{clan::Id, player::Jid}, ticket::Ticket};
 
 /// Request to send an invitation to a player.
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 pub struct SendInvitation {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+
     /// The JID of the player to invite.
     pub jid: Jid,
 }
@@ -16,6 +22,22 @@ pub struct SendInvitation {
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
 pub struct CancelInvitation {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+
     /// The JID of the player to cancel the invitation for.
     pub jid: Jid,
+}
+
+/// Request to join a clan.
+#[derive(Debug, Deserialize)]
+pub struct RequestMembership {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
 }
