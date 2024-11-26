@@ -2,13 +2,16 @@
 
 use serde::Deserialize;
 
-use crate::structs::entities::{clan::{Clan, Id}, player::{Jid, Player, Role, Status}, ticket::Ticket};
+use crate::structs::{
+    entities::{clan::{Clan, Id}, player::{Jid, Player, Role, Status}},
+    ticket::Ticket,
+};
 
 /// Request to create a clan.
 #[derive(Debug, Deserialize)]
 pub struct CreateClan {
-    /// A PSN ticket for authenticating the request
-    pub ticket: Ticket,
+    /// A PSN ticket for authenticating the request.
+    pub ticket: String,
 
     /// The name of the clan.
     pub name: String,

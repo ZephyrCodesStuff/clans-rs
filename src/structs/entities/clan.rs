@@ -3,9 +3,13 @@
 //! 
 //! They are what's stored into the database.
 
+use actix_web::web::Data;
 use chrono::{DateTime, Utc};
+use mongodb::bson::doc;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+
+use crate::{database::Database, structs::responses::error::ErrorCode};
 
 use super::player::{Jid, Player, Role, Status};
 
@@ -102,7 +106,28 @@ impl Default for Clan {
     }
 }
 
+
 impl Clan {
+    /// Save the clan in the database.
+    /// 
+    /// This will replace the clan's document altogether and,
+    /// if the clan doesn't exist, it will create a new one.
+    pub async fn save(&self, database: &Data<Database>) -> Result<(), ErrorCode> {
+        database.clans.replace_one(doc! { "id": self.id }, self.clone())
+            .upsert(true) // Create the document if it doesn't exist
+            .await
+            .map_err(|_| ErrorCode::InternalServerError)
+            .map(|_| ())
+    }
+
+    /// Delete the clan from the database.
+    pub async fn delete(&self, database: &Data<Database>) -> Result<(), ErrorCode> {
+        database.clans.delete_one(doc! { "id": self.id })
+            .await
+            .map_err(|_| ErrorCode::InternalServerError)
+            .map(|_| ())
+    }
+
     /// Returns the clan's ID.
     pub const fn id(&self) -> Id {
         self.id

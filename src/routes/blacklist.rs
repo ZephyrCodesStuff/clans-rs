@@ -10,8 +10,8 @@ use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
     entities::player::Jid, requests::{base::Request, blacklist::{DeleteBlacklistEntry, GetBlacklist, RecordBlacklistEntry}}, responses::{
-        base::{Content, ErrorCode, List, Response},
-        entities::BlacklistEntry,
+        base::{Content, List, Response},
+        entities::BlacklistEntry, error::ErrorCode,
     }
 }};
 
@@ -21,10 +21,10 @@ use crate::{database::Database, structs::{
 pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>) -> Response<BlacklistEntry> {
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let clan = clan.unwrap();
@@ -54,22 +54,22 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
 
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let mut clan = clan.unwrap();
 
     // Check if the user is allowed to add to the blacklist
     if !clan.is_mod(&jid) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+        return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is a member of the clan
     if !clan.is_member(&Jid::from(req.request.jid.clone())) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_MEMBER_STATUS_INVALID);
+        return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
     // Add the player to the blacklist
@@ -77,7 +77,7 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
 
     // Update the clan
     if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+        return Response::error(ErrorCode::InternalServerError);
     }
 
     Response::success(Content::Empty)
@@ -90,22 +90,22 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
 
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let mut clan = clan.unwrap();
 
     // Check if the user is allowed to remove from the blacklist
     if !clan.is_mod(&jid) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+        return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the user is actually blacklisted
     if !clan.is_blacklisted(&Jid::from(req.request.jid.clone())) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_BLACKLIST_ENTRY);
+        return Response::error(ErrorCode::NoSuchBlacklistEntry);
     }
 
     // Remove the player from the blacklist
@@ -113,7 +113,7 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
 
     // Update the clan
     if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+        return Response::error(ErrorCode::InternalServerError);
     }
 
     Response::success(Content::Empty)

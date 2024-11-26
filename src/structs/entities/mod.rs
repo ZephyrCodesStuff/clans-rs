@@ -3,8 +3,6 @@
 //! 
 //! Examples of entities include clans and players.
 
-pub mod ticket;
-
 pub mod clan;
 pub mod player;
 pub mod announcement;

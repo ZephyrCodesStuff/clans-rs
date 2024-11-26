@@ -10,8 +10,8 @@ use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
     requests::{base::Request, members::GetMemberList}, responses::{
-        base::{Content, ErrorCode, List, Response},
-        entities::PlayerInfo,
+        base::{Content, List, Response},
+        entities::PlayerInfo, error::ErrorCode,
     }
 }};
 
@@ -21,10 +21,10 @@ use crate::{database::Database, structs::{
 pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberList>) -> Response<PlayerInfo> {
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let clan = clan.unwrap();

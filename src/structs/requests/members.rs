@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::structs::entities::{clan::Id, ticket::Ticket};
+use crate::structs::{entities::clan::Id, ticket::Ticket};
 
 /// Request to get a list of members.
 #[derive(Debug, Deserialize)]
