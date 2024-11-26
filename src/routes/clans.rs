@@ -16,9 +16,9 @@ use crate::{
         entities::{
             clan::Clan,
             player::Jid,
-        }, requests::{base::Request, clans::{CreateClan, GetClanInfo, GetClanList}}, responses::{
+        }, requests::{base::Request, clans::{ClanSearch, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, ErrorCode, List, Response},
-            entities::{ClanId, ClanInfo, ClanPlayerInfo},
+            entities::{ClanId, ClanInfo, ClanPlayerInfo, ClanSearchInfo},
         }
     },
 };
@@ -60,7 +60,7 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     // Format them from the perspective of the player
     let items: Vec<ClanPlayerInfo> = data
         .into_iter()
-        .skip(req.request.start as usize)
+        .skip((req.request.start - 1) as usize)
         .take(req.request.max as usize)
         .map(|clan| ClanPlayerInfo::from((clan, jid.clone())))
         .collect();
@@ -78,14 +78,11 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
 /// Search for a clan.
 #[post("/clan_manager_view/func/clan_search")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn clan_search(database: Data<Database>, req: Request<GetClanList>, bytes: Bytes) -> Response<ClanPlayerInfo> {
+pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>, bytes: Bytes) -> Response<ClanSearchInfo> {
     log::warn!("TODO: Implement clan_search");
     log::debug!("{}", String::from_utf8_lossy(&bytes));
     
     // TODO: Implement the actual search logic
-    
-    // Return all clans for now
-    let jid = Jid::from(req.request.ticket);
 
     // Find all the clans
     let Ok(mut clans) = database.clans.find(doc! {}).await
@@ -102,11 +99,11 @@ pub async fn clan_search(database: Data<Database>, req: Request<GetClanList>, by
     let data_len = data.len();
 
     // Format them from the perspective of the player
-    let items: Vec<ClanPlayerInfo> = data
+    let items: Vec<ClanSearchInfo> = data
         .into_iter()
-        .skip(req.request.start as usize)
+        .skip((req.request.start - 1) as usize)
         .take(req.request.max as usize)
-        .map(|clan| ClanPlayerInfo::from((clan, jid.clone())))
+        .map(ClanSearchInfo::from)
         .collect();
 
     let list = List {
@@ -136,18 +133,58 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
 
 /// Disband a clan.
 #[post("/clan_manager_update/sec/disband_clan")]
-pub async fn disband_clan(bytes: Bytes) -> Response<()> {
-    log::warn!("TODO: Implement disband_clan");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -> Response<()> {
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
+
+    let clan = clan.unwrap();
+
+    // Check if the user is allowed to disband the clan
+    if !clan.is_owner(&Jid::from(req.request.ticket)) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Disband the clan
+    if database.clans.delete_one(doc! { "id": clan.id() }).await.is_err() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+    }
 
     Response::success(Content::Empty)
 }
 
 /// Update a clan's info.
 #[post("/clan_manager_update/sec/update_clan_info")]
-pub async fn update_clan_info(bytes: Bytes) -> Response<()> {
-    log::warn!("TODO: Implement update_clan_info");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanInfo>) -> Response<()> {
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
+
+    let mut clan = clan.unwrap();
+
+    // Check if the user is allowed to update the clan's info
+    if !clan.is_mod(&Jid::from(req.request.ticket)) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Update the clan's info
+    clan.description = req.request.description;
+
+    // Save the updated clan to the database
+    if database.clans.update_one(
+        doc! { "id": clan.id() }, 
+        doc! { "$set": { "description": clan.description } }
+    ).await.is_err() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+    }
 
     Response::success(Content::Empty)
 }

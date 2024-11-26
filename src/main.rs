@@ -62,6 +62,7 @@ async fn main() -> std::io::Result<()> {
 
             // Invites
             .service(routes::invites::send_invitation)
+            .service(routes::invites::cancel_invitation)
             .service(routes::invites::request_membership)
 
             .wrap(Logger::default())

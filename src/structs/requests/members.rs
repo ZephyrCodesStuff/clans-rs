@@ -12,7 +12,7 @@ pub struct GetMemberList {
     pub ticket: Ticket,
 
     /// The ID of the clan.
-    pub clan_id: Id,
+    pub id: Id,
 
     /// How many members to skip.
     pub start: u32,

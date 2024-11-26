@@ -9,8 +9,9 @@ use super::ticket::Ticket;
 /// A JID is an identifier composed of:
 /// 
 /// - The player's username.
+/// - The region's ``PlayStation Network`` domain (a0, a1, ...)
 /// - The player's account region.
-/// - The region's ``PlayStation Network`` domain.
+/// - ``PlayStation Network``'s domain.
 /// 
 /// Example: ``username@a1.us.np.playstation.net``
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -18,16 +19,32 @@ pub struct Jid {
     /// The player's username.
     pub username: String,
 
-    /// The player's account region.
-    pub region: String,
-
     /// The region's ``PlayStation Network`` domain.
     pub domain: String,
+
+    /// The player's account region.
+    pub region: String,
+}
+
+impl From<String> for Jid {
+    fn from(jid: String) -> Self {
+        let mut parts = jid.split('@');
+
+        let username = parts.next().unwrap_or_default().to_string();
+        let psn = parts.next().unwrap_or_default();
+
+        let mut parts = psn.split('.');
+
+        let domain = parts.next().unwrap_or_default().to_string();
+        let region = parts.next().unwrap_or_default().to_string();
+
+        Self { username, domain, region }
+    }
 }
 
 impl Display for Jid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}@{}.{}.playstation.net", self.username, self.domain, self.region)
+        write!(f, "{}@{}.{}.np.playstation.net", self.username, self.domain, self.region)
     }
 }
 
@@ -46,13 +63,7 @@ impl<'de> Deserialize<'de> for Jid {
         D: serde::de::Deserializer<'de>,
     {
         let jid = String::deserialize(deserializer)?;
-        let mut parts = jid.split('@');
-
-        let username = parts.next().unwrap_or_default().to_string();
-        let domain = parts.next().unwrap_or_default().to_string();
-        let region = domain.split('.').next().unwrap_or_default().to_string();
-
-        Ok(Self { username, region, domain })
+        Ok(Self::from(jid))
     }
 }
 
@@ -67,7 +78,7 @@ impl From<Ticket> for Jid {
 }
 
 /// A player's role in the clan.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Role {
     /// The player's role is unknown.
     /// 

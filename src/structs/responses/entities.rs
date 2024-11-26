@@ -330,6 +330,14 @@ pub struct BlacklistEntry {
     jid: String,
 }
 
+impl From<Jid> for BlacklistEntry {
+    fn from(jid: Jid) -> Self {
+        Self {
+            jid: jid.to_string(),
+        }
+    }
+}
+
 impl From<Player> for BlacklistEntry {
     fn from(player: Player) -> Self {
         Self {

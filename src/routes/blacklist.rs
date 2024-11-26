@@ -5,36 +5,41 @@
 //! - Removing a player from a clan's blacklist
 //! - ...
 
-use actix_web::{post, web::Bytes};
+use actix_web::{post, web::Data};
+use mongodb::bson::doc;
 
-use crate::structs::{
-    entities::player::{Jid, Player, Role, Status},
-    responses::{
-        base::{Content, List, Response},
+use crate::{database::Database, structs::{
+    entities::player::Jid, requests::{base::Request, blacklist::{DeleteBlacklistEntry, GetBlacklist, RecordBlacklistEntry}}, responses::{
+        base::{Content, ErrorCode, List, Response},
         entities::BlacklistEntry,
-    },
-};
+    }
+}};
 
 /// Get a clan's blacklist.
 #[post("/clan_manager_view/sec/get_blacklist")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn get_blacklist(bytes: Bytes) -> Response<BlacklistEntry> {
-    log::warn!("TODO: Implement get_blacklist");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>) -> Response<BlacklistEntry> {
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
-    let data = vec![Player {
-        jid: Jid::default(),
-        role: Role::Leader,
-        status: Status::Member,
-        allow_msg: false,
-        description: String::from("Description"),
-    }];
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
 
-    let items: Vec<BlacklistEntry> = data.into_iter().map(BlacklistEntry::from).collect();
+    let clan = clan.unwrap();
+
+    // Collect all valid entries
+    let items = clan.blacklist
+        .iter()
+        .skip((req.request.start - 1) as usize)
+        .take(req.request.max as usize)
+        .map(|m| BlacklistEntry::from(m.to_owned()))
+        .collect::<Vec<BlacklistEntry>>();
 
     let list = List {
         results: items.len() as u32,
-        total: items.len() as u32,
+        total: clan.blacklist.len() as u32,
 
         items,
     };
@@ -44,18 +49,62 @@ pub async fn get_blacklist(bytes: Bytes) -> Response<BlacklistEntry> {
 
 /// Add a player to a clan's blacklist.
 #[post("/clan_manager_update/sec/record_blacklist_entry")]
-pub async fn record_blacklist_entry(bytes: Bytes) -> Response<()> {
-    log::warn!("TODO: Implement record_blacklist_entry");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn record_blacklist_entry(database: Data<Database>, req: Request<RecordBlacklistEntry>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
+
+    let mut clan = clan.unwrap();
+
+    // Check if the user is allowed to add to the blacklist
+    if !clan.is_mod(&jid) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Add the player to the blacklist
+    clan.blacklist.push(Jid::from(req.request.jid));
+
+    // Update the clan
+    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+    }
 
     Response::success(Content::Empty)
 }
 
 /// Remove a player from a clan's blacklist.
 #[post("/clan_manager_update/sec/delete_blacklist_entry")]
-pub async fn delete_blacklist_entry(bytes: Bytes) -> Response<()> {
-    log::warn!("TODO: Implement delete_blacklist_entry");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
+pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<DeleteBlacklistEntry>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
+    // Find the clan
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+
+    if clan.is_none() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+    }
+
+    let mut clan = clan.unwrap();
+
+    // Check if the user is allowed to remove from the blacklist
+    if !clan.is_mod(&jid) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Remove the player from the blacklist
+    clan.blacklist.retain(|j| j != &Jid::from(req.request.jid.clone()));
+
+    // Update the clan
+    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
+    }
 
     Response::success(Content::Empty)
 }

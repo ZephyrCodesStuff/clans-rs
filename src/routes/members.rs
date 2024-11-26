@@ -20,7 +20,7 @@ use crate::{database::Database, structs::{
 #[allow(clippy::cast_possible_truncation)]
 pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberList>) -> Response<PlayerInfo> {
     // Find the clan
-    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.clan_id }).await
+    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
@@ -32,7 +32,7 @@ pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberLis
     // Collect all valid entries
     let items = clan.members
         .iter()
-        .skip(req.request.start as usize)
+        .skip((req.request.start - 1) as usize)
         .take(req.request.max as usize)
         .map(|m| PlayerInfo::from(m.to_owned()))
         .collect::<Vec<PlayerInfo>>();

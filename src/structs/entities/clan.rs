@@ -111,14 +111,26 @@ impl Clan {
     /// Returns the role of the given player, in the clan.
     pub fn role_of(&self, jid: &Jid) -> Option<&Role> {
         self.members.iter()
-            .find(|player| &player.jid == jid)
+            .find(|player| player.jid.username == jid.username)
             .map(|player| &player.role)
     }
 
     /// Returns the status of the given player, in the clan.
     pub fn status_of(&self, jid: &Jid) -> Option<&Status> {
         self.members.iter()
-            .find(|player| &player.jid == jid)
+            .find(|player| player.jid.username == jid.username)
             .map(|player| &player.status)
+    }
+
+    /// Returns whether a player is allowed to perform administrative actions.
+    pub fn is_mod(&self, jid: &Jid) -> bool {
+        self.members.iter()
+            .any(|player| player.jid.username == jid.username && player.role >= Role::SubLeader)
+    }
+
+    /// Returns whether a player is the owner of the clan.
+    pub fn is_owner(&self, jid: &Jid) -> bool {
+        self.members.iter()
+            .any(|player| player.jid.username == jid.username && player.role == Role::Leader)
     }
 }

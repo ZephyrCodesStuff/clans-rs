@@ -50,10 +50,39 @@ pub struct GetClanList {
     pub max: u32,
 }
 
+/// Request to get a list of clans.
+#[derive(Debug, Deserialize)]
+pub struct ClanSearch {
+    /// How many clans to skip.
+    pub start: u32,
+
+    /// How many clans to return.
+    pub max: u32,
+}
+
 /// Request to get info about a clan.
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
 pub struct GetClanInfo {
+    /// The ID of the clan.
+    pub id: Id,
+}
+
+/// Request to update a clan's info.
+#[derive(Debug, Deserialize)]
+pub struct UpdateClanInfo {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+
+    /// The new description of the clan.
+    pub description: String,
+}
+
+/// Request to disband a clan.
+#[derive(Debug, Deserialize)]
+pub struct DisbandClan {
     /// A PSN ticket for authenticating the request.
     pub ticket: Ticket,
 
