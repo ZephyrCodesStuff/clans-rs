@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::structs::entities::{clan::Id, player::Jid, ticket::Ticket};
+use crate::structs::{entities::{clan::Id, player::Jid}, ticket::Ticket};
 
 /// Request to send an invitation to a player.
 #[derive(Debug, Deserialize)]

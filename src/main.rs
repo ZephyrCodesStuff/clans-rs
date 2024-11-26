@@ -14,6 +14,7 @@ mod utils;
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use database::Database;
+use structs::responses::{base::Response, error::ErrorCode};
 
 
 #[actix_web::main]
@@ -64,6 +65,11 @@ async fn main() -> std::io::Result<()> {
             .service(routes::invites::send_invitation)
             .service(routes::invites::cancel_invitation)
             .service(routes::invites::request_membership)
+
+            // Fallback handler
+            .default_service(actix_web::web::to(|| async {
+                Response::<()>::error(ErrorCode::NoSuchClanService)
+            }))
 
             .wrap(Logger::default())
             .app_data(Data::new(database.clone()))

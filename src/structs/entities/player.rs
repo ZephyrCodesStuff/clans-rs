@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use super::ticket::Ticket;
+use crate::structs::ticket::Ticket;
 
 /// A JID is an identifier composed of:
 /// 

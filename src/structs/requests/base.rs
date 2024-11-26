@@ -18,13 +18,12 @@ impl<'a, T: Deserialize<'a>> FromRequest for Request<T> {
     /// Get the request body from the client and deserialize it.
     fn from_request(req: &actix_web::HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
         let fut = actix_web::web::Bytes::from_request(req, payload);
-        let fut = async move {
+        Box::pin(async move {
             let bytes = fut.await?;
             let request = serde_xml_rs::from_reader(bytes.reader())
                 .map_err(actix_web::error::ErrorInternalServerError)?;
 
             Ok(Self { request })
-        };
-        Box::pin(fut)
+        })
     }
 }

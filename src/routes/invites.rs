@@ -3,7 +3,7 @@
 use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::player::{Jid, Player, Role, Status}, requests::{base::Request, invites::{CancelInvitation, RequestMembership, SendInvitation}}, responses::base::{Content, ErrorCode, Response}}};
+use crate::{database::Database, structs::{entities::player::{Jid, Player, Role, Status}, requests::{base::Request, invites::{CancelInvitation, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
 
 /// Invite a player to a clan.
 #[post("/clan_manager_update/sec/send_invitation")]
@@ -12,22 +12,22 @@ pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitati
 
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let mut clan = clan.unwrap();
 
     // Check if the user has been blacklisted
     if clan.is_blacklisted(&jid) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BLACKLISTED);
+        return Response::error(ErrorCode::Blacklisted);
     }
 
     // Check if the player is already a member
     if clan.is_member(&req.request.jid) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_MEMBER_STATUS_INVALID);
+        return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
     // Invite the player
@@ -41,9 +41,7 @@ pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitati
     clan.members.push(player);
 
     // Update the clan
-    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
-    }
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
 
     Response::success(Content::Empty)
 }
@@ -53,10 +51,10 @@ pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitati
 pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvitation>) -> Response<()> {
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let mut clan = clan.unwrap();
@@ -64,20 +62,18 @@ pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvi
     // Check if there actually is an invitation
     let member = clan.members.iter().find(|m| m.jid == req.request.jid);
     if member.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN_MEMBER);
+        return Response::error(ErrorCode::NoSuchClanMember);
     }
 
     if member.unwrap().status != Status::Invited {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_MEMBER_STATUS_INVALID);
+        return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
     // Cancel the invitation
     clan.members.retain(|p| p.jid != req.request.jid);
 
     // Update the clan
-    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
-    }
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
 
     Response::success(Content::Empty)
 }
@@ -89,10 +85,10 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
 
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
-    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+    else { return Response::error(ErrorCode::InternalServerError) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
+        return Response::error(ErrorCode::NoSuchClan);
     }
 
     let mut clan = clan.unwrap();
@@ -101,13 +97,13 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     let member = clan.members.iter().find(|m| m.jid == jid);
     if let Some(member) = member {
         if member.status == Status::Invited || member.status == Status::Pending {
-            return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+            return Response::error(ErrorCode::MemberStatusInvalid);
         }
     }
 
     // Check if the user has been blacklisted
     if clan.is_blacklisted(&jid) {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BLACKLISTED);
+        return Response::error(ErrorCode::Blacklisted);
     }
 
     // Request membership
@@ -121,9 +117,7 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     clan.members.push(player);
 
     // Update the clan
-    if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR);
-    }
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
 
     Response::success(Content::Empty)
 }
