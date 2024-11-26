@@ -5,7 +5,7 @@
 //! - Removing a player from a clan's blacklist
 //! - ...
 
-use actix_web::post;
+use actix_web::{post, web::Bytes};
 
 use crate::structs::{
     entities::player::{Jid, Player, Role, Status},
@@ -18,11 +18,12 @@ use crate::structs::{
 /// Get a clan's blacklist.
 #[post("/clan_manager_view/sec/get_blacklist")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn get_blacklist() -> Response<BlacklistEntry> {
+pub async fn get_blacklist(bytes: Bytes) -> Response<BlacklistEntry> {
     log::warn!("TODO: Implement get_blacklist");
+    log::debug!("{}", String::from_utf8_lossy(&bytes));
 
     let data = vec![Player {
-        jid: Jid::from("debug"),
+        jid: Jid::default(),
         role: Role::Leader,
         status: Status::Member,
         allow_msg: false,
@@ -43,16 +44,18 @@ pub async fn get_blacklist() -> Response<BlacklistEntry> {
 
 /// Add a player to a clan's blacklist.
 #[post("/clan_manager_update/sec/record_blacklist_entry")]
-pub async fn record_blacklist_entry() -> Response<()> {
+pub async fn record_blacklist_entry(bytes: Bytes) -> Response<()> {
     log::warn!("TODO: Implement record_blacklist_entry");
+    log::debug!("{}", String::from_utf8_lossy(&bytes));
 
     Response::success(Content::Empty)
 }
 
 /// Remove a player from a clan's blacklist.
 #[post("/clan_manager_update/sec/delete_blacklist_entry")]
-pub async fn delete_blacklist_entry() -> Response<()> {
+pub async fn delete_blacklist_entry(bytes: Bytes) -> Response<()> {
     log::warn!("TODO: Implement delete_blacklist_entry");
+    log::debug!("{}", String::from_utf8_lossy(&bytes));
 
     Response::success(Content::Empty)
 }

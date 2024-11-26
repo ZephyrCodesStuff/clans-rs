@@ -7,7 +7,7 @@ authors = ["ZephyrCodesStuff <zeph@zephs.me>"]
 keywords = ["clans", "sony", "playstation", "ps3", "api"]
 categories = ["api", "web"]
 
-version = "0.1.0"
+version = "1.0.0"
 repository = "https://github.com/ZephyrCodesStuff/clans-rs"
 
 license = "GPL-3.0"
@@ -20,9 +20,11 @@ actix-web = "4.4.0"
 base64 = "0.22.1"
 chrono = { version = "0.4.38", features = ["serde"] }
 dotenv = "0.15.0"
+futures-util = "0.3.31"
 log = "0.4.20"
 mongodb = "3.1.0"
 pretty_env_logger = "0.5.0"
+rand = "0.8.5"
 serde = { version = "1.0.215", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 xml-rs = "0.8.23"
@@ -41,7 +43,7 @@ perf = "warn"
 
 # Override some of the default lints
 multiple_crate_versions = { level = "allow", priority = 1 }
-missing_docs_in_private_items = { level = "allow", priority = 1 }
+missing_docs_in_private_items = { level = "deny", priority = 1 }
 
 [lints.rust]
 unused_imports = "forbid"

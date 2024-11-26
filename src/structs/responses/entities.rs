@@ -6,13 +6,15 @@
 //! they can be converted from our schema, to the XML
 //! format that the game expects.
 
+#![allow(clippy::missing_docs_in_private_items)]
+
 use chrono::{DateTime, Utc};
 use xml::{writer::XmlEvent, EmitterConfig};
 
-use crate::{structs::entities::{clan::{Clan, Id}, player::Player}, utils::{self, xml_format::ToXML}};
+use crate::{structs::entities::{clan::{Clan, Id}, player::{Jid, Player, Role, Status}}, utils::{self, xml_format::ToXML}};
 
 /// Full XML entity for a clan.
-/// See: [`Clan`](crate::structs::entities::clan::Clan)
+/// See: [`Clan`]
 /// 
 /// ### Used for:
 /// - `/get_clan_info`.
@@ -39,26 +41,28 @@ pub struct ClanInfo {
     description: String,
     members: u32,
     date_created: DateTime<Utc>,
-    auto_accept: bool,
+    auto_accept: u8,
     int_attr1: u32,
     int_attr2: u32,
     int_attr3: u32,
+    size: u32,
 }
 
 #[allow(clippy::cast_possible_truncation)]
 impl From<Clan> for ClanInfo {
     fn from(clan: Clan) -> Self {
         Self {
-            id: clan.id,
+            id: clan.id(),
             name: clan.name,
             tag: clan.tag,
             description: clan.description,
             members: clan.members.len() as u32,
             date_created: clan.date_created,
-            auto_accept: clan.auto_accept,
+            auto_accept: u8::from(clan.auto_accept),
             int_attr1: clan.int_attr1,
             int_attr2: clan.int_attr2,
             int_attr3: clan.int_attr3,
+            size: clan.size,
         }
     }
 }
@@ -77,13 +81,14 @@ impl ToXML for ClanInfo {
         for (elem, value) in [
             ("name", &self.name),
             ("tag", &self.tag),
-            ("description", &self.description),
             ("members", &self.members.to_string()),
-            ("date_created", &utils::date_format::iso8601(&self.date_created)),
-            ("auto_accept", &self.auto_accept.to_string()),
-            ("int_attr1", &self.int_attr1.to_string()),
-            ("int_attr2", &self.int_attr2.to_string()),
-            ("int_attr3", &self.int_attr3.to_string()),
+            ("date-created", &utils::date_format::iso8601(&self.date_created)),
+            ("description", &self.description),
+            ("auto-accept", &self.auto_accept.to_string()),
+            ("int-attr1", &self.int_attr1.to_string()),
+            ("int-attr2", &self.int_attr2.to_string()),
+            ("int-attr3", &self.int_attr3.to_string()),
+            ("size", &self.size.to_string()),
         ] {
             writer.write(XmlEvent::start_element(elem)).ok();
             writer.write(XmlEvent::characters(value)).ok();
@@ -98,7 +103,7 @@ impl ToXML for ClanInfo {
 }
 
 /// Short XML entity for a clan.
-/// See: [`Clan`](crate::structs::entities::clan::Clan)
+/// See: [`Clan`]
 /// 
 /// ### Used for:
 /// - `/clan_search`.
@@ -123,7 +128,7 @@ pub struct ClanSearchInfo {
 impl From<Clan> for ClanSearchInfo {
     fn from(clan: Clan) -> Self {
         Self {
-            id: clan.id,
+            id: clan.id(),
             name: clan.name,
             tag: clan.tag,
             members: clan.members.len() as u32,
@@ -160,7 +165,7 @@ impl ToXML for ClanSearchInfo {
 }
 
 /// XML entity for a clan, from the perspective of a player.
-/// See: [`Clan`](crate::structs::entities::clan::Clan)
+/// See: [`Clan`]
 /// 
 /// ### Used for:
 /// - `/get_clan_list`.
@@ -185,21 +190,31 @@ pub struct ClanPlayerInfo {
     role: u32,
     status: u32,
     online_name: String,
-    allow_msg: bool,
+    allow_msg: u8,
     members: u32,
 }
 
 #[allow(clippy::cast_possible_truncation)]
-impl From<(Clan, Player)> for ClanPlayerInfo {
-    fn from((clan, player): (Clan, Player)) -> Self {
+impl From<(Clan, Jid)> for ClanPlayerInfo {
+    fn from((clan, player): (Clan, Jid)) -> Self {
+        let role = clan.role_of(&player)
+            .unwrap_or(&Role::NonMember);
+
+        let status = clan.status_of(&player)
+            .unwrap_or(&Status::Unknown);
+
+        let allow_msg = clan.members.iter()
+            .find(|p| p.jid == player)
+            .map_or(0, |p| u8::from(p.allow_msg));
+
         Self {
-            id: clan.id,
-            name: clan.name,
-            tag: clan.tag,
-            role: player.role as u32,
-            status: player.status as u32,
-            online_name: player.username().to_string(),
-            allow_msg: player.allow_msg,
+            id: clan.id(),
+            name: clan.name.clone(),
+            tag: clan.tag.clone(),
+            role: *role as u32,
+            status: *status as u32,
+            online_name: player.username.clone(),
+            allow_msg,
             members: clan.members.len() as u32,
         }
     }
@@ -238,7 +253,7 @@ impl ToXML for ClanPlayerInfo {
 }
 
 /// XML entity for a player.
-/// See: [`Player`](crate::structs::entities::player::Player)
+/// See: [`Player`]
 /// 
 /// ### Used for:
 /// - `/get_member_list`.
@@ -262,7 +277,7 @@ pub struct PlayerInfo {
 impl From<Player> for PlayerInfo {
     fn from(player: Player) -> Self {
         Self {
-            jid: player.jid,
+            jid: player.jid.to_string(),
             role: player.role as u32,
             status: player.status as u32,
             description: player.description,
@@ -299,7 +314,7 @@ impl ToXML for PlayerInfo {
 }
 
 /// Blacklist entry for a clan.
-/// See: [`Player`](crate::structs::entities::player::Player)
+/// See: [`Player`]
 /// 
 /// ### Used for:
 /// - `/get_blacklist`
@@ -318,7 +333,7 @@ pub struct BlacklistEntry {
 impl From<Player> for BlacklistEntry {
     fn from(player: Player) -> Self {
         Self {
-            jid: player.jid,
+            jid: player.jid.to_string(),
         }
     }
 }
@@ -346,7 +361,7 @@ impl ToXML for BlacklistEntry {
 }
 
 /// XML entity for an ID.
-/// See: [`Id`](crate::structs::entities::clan::Id)
+/// See: [`Id`]
 /// 
 /// ### Used for:
 /// - `/create_clan`
@@ -363,7 +378,7 @@ pub struct ClanId {
 impl From<Clan> for ClanId {
     fn from(clan: Clan) -> Self {
         Self {
-            id: clan.id,
+            id: clan.id(),
         }
     }
 }

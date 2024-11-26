@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<responses>
+    <!-- /get_blacklist -->
+    <clan platform="ps3" sv="1.00">
+        <ticket>
+            QQAAAAAAAAABNjAAAAABAAAIABT5nfms5pxKaQRDXRKkxHK9vaA4QwABAAQAAAEAAAcACAAAAZNoehYzAAcACAAAAZNtoG74AAIACFfIK9yESNv0AAQAIGZhc3Rlcl9icmFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAgABGl0AAUABAAEYzAAAAAIABhJVjAwMDEtTlBYUzAxMDAxXzAwAAAAAAAwEQAEB7EECAABAAQ3AAIAMBAAAAAAAAAAAAAAAAgACFBTM19DAAAAAAgAQALAG2NOw+H3q4Aar4w6/aLcaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAgAsAAgABDTNPKkACAAgnPnvsTxPZnYG1rt+4QO7u/oUSlh97tyAQJSOQO53vvs=</ticket>
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <id>1</id>
+        <start>1</start>
+        <max>100</max>
+    </clan>
+
+    <!-- /get_member_list -->
+    <clan platform="ps3" sv="1.00">
+        <ticket>
+            QQAAAAAAAAABNjAAAAABAAAIABT5nfms5pxKaQRDXRKkxHK9vaA4QwABAAQAAAEAAAcACAAAAZNoehYzAAcACAAAAZNtoG74AAIACFfIK9yESNv0AAQAIGZhc3Rlcl9icmFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAgABGl0AAUABAAEYzAAAAAIABhJVjAwMDEtTlBYUzAxMDAxXzAwAAAAAAAwEQAEB7EECAABAAQ3AAIAMBAAAAAAAAAAAAAAAAgACFBTM19DAAAAAAgAQALAG2NOw+H3q4Aar4w6/aLcaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAgAsAAgABDTNPKkACAAgnPnvsTxPZnYG1rt+4QO7u/oUSlh97tyAQJSOQO53vvs=</ticket>
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <id>1</id>
+        <start>1</start>
+        <max>100</max>
+    </clan>
+
+    <!-- /get_clan_list -->
+    <clan platform="ps3" sv="1.00">
+        <ticket>
+            QQAAAAAAAAABNjAAAAABAAAIABT5nfms5pxKaQRDXRKkxHK9vaA4QwABAAQAAAEAAAcACAAAAZNoehYzAAcACAAAAZNtoG74AAIACFfIK9yESNv0AAQAIGZhc3Rlcl9icmFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAgABGl0AAUABAAEYzAAAAAIABhJVjAwMDEtTlBYUzAxMDAxXzAwAAAAAAAwEQAEB7EECAABAAQ3AAIAMBAAAAAAAAAAAAAAAAgACFBTM19DAAAAAAgAQALAG2NOw+H3q4Aar4w6/aLcaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAgAsAAgABDTNPKkACAAgnPnvsTxPZnYG1rt+4QO7u/oUSlh97tyAQJSOQO53vvs=</ticket>
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <start>1</start>
+        <max>100</max>
+        <psid>a046fcc82c7156ee6a8c5d3f54b01a74</psid>
+        <titlepp>
+            fb4849ff4321e6c12cf1d773f22e9010cc368b69d161e7a0fed08b7b0f97df01b15645ed91c5033f7b6e4ae1ae8b4bae2622be713dedd79392af4b891fac51f1ac78234cdfe535b098b6757f4edff2f1081289aeadbe3f0a9e0f240064f3f2fc2e94076d5d7d983624090596e08543fa8a8739fa493cab9c2596bff36feb8e14</titlepp>
+    </clan>
+
+    <!-- /get_clan_info -->
+    <clan platform="ps3" sv="1.00">
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <id>1</id>
+    </clan>
+
+    <!-- /update_clan_info -->
+    <clan platform="ps3" sv="1.00">
+        <ticket>
+            QQAAAAAAAAABNjAAAAABAAAIABQ3SCV9qRdiCd9nXFqG7xesKG383AABAAQAAAEAAAcACAAAAZNomW2DAAcACAAAAZNtv8ZoAAIACFfIK9yESNv0AAQAIGZhc3Rlcl9icmFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAgABGl0AAUABAAEYzAAAAAIABhJVjAwMDEtTlBYUzAxMDAxXzAwAAAAAAAwEQAEB7EECAABAAQ3AAIAMBAAAAAAAAAAAAAAAAgACFBTM19DAAAAAAgAQALAG2NOw+H3q4Aar4w6/aLcaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAgAsAAgABDTNPKkACAAgXkTVB5MbSZjAv3GJ7SMsb48B5kDVsj07uCOgrW2iuPA=</ticket>
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <id>1</id>
+        <description>sd</description>
+    </clan>
+
+    <!-- /clan_search -->
+    <clan platform="ps3" sv="1.00">
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <start>1</start>
+        <max>1</max>
+        <filter>
+            <name op="eq" value="♥ zeph&apos;s loved ones ♥" />
+        </filter>
+    </clan>
+
+    <!-- /create_clan -->
+    <clan platform="ps3" sv="1.00">
+        <npcommid version="1">NPWR00432_00</npcommid>
+        <name>debug</name>
+        <tag>dbg</tag>
+    </clan>
+</responses>

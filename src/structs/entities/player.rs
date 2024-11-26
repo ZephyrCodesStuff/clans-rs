@@ -4,11 +4,67 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-/// A JID is a string composed of a ``username`` and the
-/// ``PlayStation`` region server the account is based on.
+use super::ticket::Ticket;
+
+/// A JID is an identifier composed of:
+/// 
+/// - The player's username.
+/// - The player's account region.
+/// - The region's ``PlayStation Network`` domain.
 /// 
 /// Example: ``username@a1.us.np.playstation.net``
-pub type Jid = String;
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct Jid {
+    /// The player's username.
+    pub username: String,
+
+    /// The player's account region.
+    pub region: String,
+
+    /// The region's ``PlayStation Network`` domain.
+    pub domain: String,
+}
+
+impl Display for Jid {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}@{}.{}.playstation.net", self.username, self.domain, self.region)
+    }
+}
+
+impl Serialize for Jid {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        self.to_string().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Jid {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        let jid = String::deserialize(deserializer)?;
+        let mut parts = jid.split('@');
+
+        let username = parts.next().unwrap_or_default().to_string();
+        let domain = parts.next().unwrap_or_default().to_string();
+        let region = domain.split('.').next().unwrap_or_default().to_string();
+
+        Ok(Self { username, region, domain })
+    }
+}
+
+impl From<Ticket> for Jid {
+    fn from(ticket: Ticket) -> Self {
+        Self {
+            username: ticket.username,
+            region: ticket.region,
+            domain: ticket.domain,
+        }
+    }
+}
 
 /// A player's role in the clan.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -102,9 +158,14 @@ pub struct Player {
     pub allow_msg: bool,
 }
 
-impl Player {
-    /// The player's username.
-    pub fn username(&self) -> &str {
-        self.jid.split('@').next().unwrap_or_default()
+impl Default for Player {
+    fn default() -> Self {
+        Self {
+            jid: Jid::default(),
+            role: Role::Unknown,
+            status: Status::Unknown,
+            description: String::new(),
+            allow_msg: false,
+        }
     }
 }

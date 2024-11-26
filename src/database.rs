@@ -3,10 +3,13 @@
 //! Wrapper around the ``MongoDB`` database connection
 //! and collections.
 
+use mongodb::{bson::doc, options::IndexOptions, IndexModel};
+
 use crate::structs::entities::clan::Clan;
 
 /// Database utility struct.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Database {
     /// ``MongoDB`` database connection.
     database: mongodb::Database,
@@ -30,6 +33,17 @@ impl Database {
             .unwrap_or_else(|| client.database("clans"));
 
         let clans = database.collection("clans");
+        
+        // Make sure the clans collection has a unique index on ``id``.
+        // This will prevent duplicate clans from being created.
+        let index = IndexModel::builder()
+            .keys(doc! { "id": 1 })
+            .options(IndexOptions::builder()
+                .unique(true)
+                .build())
+            .build();
+
+        clans.create_index(index).await.unwrap();
 
         Self {
             database,

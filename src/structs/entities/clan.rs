@@ -4,9 +4,10 @@
 //! They are what's stored into the database.
 
 use chrono::{DateTime, Utc};
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::player::{Jid, Player};
+use super::player::{Jid, Player, Role, Status};
 
 /// Maximum number of clans that can exist in the game.
 const MAX_CLAN_COUNT: u32 = 1_000_000;
@@ -20,10 +21,12 @@ pub type Id = u32;
 /// Represents a clan in the game.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Clan {
-    /// Unique identifier of the clan.
+    /// Unique identifier of the clan. Should not be changed manually,
+    /// because values outside the range of [`MAX_CLAN_COUNT`] **will**
+    /// halt the game.
     /// 
     /// See: [`Id`](type.Id.html)
-    pub id: Id,
+    id: Id,
     
     /// Displayed name of the clan.
     /// 
@@ -71,4 +74,51 @@ pub struct Clan {
 
     /// Unknown use.
     pub int_attr3: u32,
+
+    /// Unknown use.
+    pub size: u32,
+}
+
+impl Default for Clan {
+    fn default() -> Self {
+        let range = 1..MAX_CLAN_COUNT;
+        let rng = &mut rand::thread_rng();
+
+        Self {
+            id: rng.gen_range(range),
+            name: String::new(),
+            tag: String::new(),
+            description: String::new(),
+            members: Vec::new(),
+            blacklist: Vec::new(),
+            date_created: Utc::now(),
+            last_updated: Utc::now(),
+            auto_accept: false,
+            int_attr1: 0,
+            int_attr2: 0,
+            int_attr3: 0,
+            size: 0,
+        }
+    }
+}
+
+impl Clan {
+    /// Returns the clan's ID.
+    pub const fn id(&self) -> Id {
+        self.id
+    }
+
+    /// Returns the role of the given player, in the clan.
+    pub fn role_of(&self, jid: &Jid) -> Option<&Role> {
+        self.members.iter()
+            .find(|player| &player.jid == jid)
+            .map(|player| &player.role)
+    }
+
+    /// Returns the status of the given player, in the clan.
+    pub fn status_of(&self, jid: &Jid) -> Option<&Status> {
+        self.members.iter()
+            .find(|player| &player.jid == jid)
+            .map(|player| &player.status)
+    }
 }

@@ -46,6 +46,8 @@ async fn main() -> std::io::Result<()> {
             .service(routes::clans::get_clan_list)
             .service(routes::clans::clan_search)
             .service(routes::clans::create_clan)
+            .service(routes::clans::disband_clan)
+            .service(routes::clans::update_clan_info)
 
             // Blacklist
             .service(routes::blacklist::get_blacklist)
@@ -54,6 +56,13 @@ async fn main() -> std::io::Result<()> {
 
             // Members
             .service(routes::members::get_member_list)
+
+            // Announcements
+            .service(routes::announcements::retrieve_announcements)
+
+            // Invites
+            .service(routes::invites::send_invitation)
+            .service(routes::invites::request_membership)
 
             .wrap(Logger::default())
             .app_data(Data::new(database.clone()))
