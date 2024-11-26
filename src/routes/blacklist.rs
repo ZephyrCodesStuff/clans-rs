@@ -24,7 +24,7 @@ pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>)
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let clan = clan.unwrap();
@@ -57,7 +57,7 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let mut clan = clan.unwrap();
@@ -65,6 +65,11 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     // Check if the user is allowed to add to the blacklist
     if !clan.is_mod(&jid) {
         return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Check if the player is a member of the clan
+    if !clan.is_member(&Jid::from(req.request.jid.clone())) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_MEMBER_STATUS_INVALID);
     }
 
     // Add the player to the blacklist
@@ -88,7 +93,7 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let mut clan = clan.unwrap();
@@ -96,6 +101,11 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     // Check if the user is allowed to remove from the blacklist
     if !clan.is_mod(&jid) {
         return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
+    }
+
+    // Check if the user is actually blacklisted
+    if !clan.is_blacklisted(&Jid::from(req.request.jid.clone())) {
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_BLACKLIST_ENTRY);
     }
 
     // Remove the player from the blacklist

@@ -30,7 +30,7 @@ pub async fn get_clan_info(database: Data<Database>, req: Request<GetClanInfo>) 
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let info = ClanInfo::from(clan.unwrap());
@@ -134,18 +134,23 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
 /// Disband a clan.
 #[post("/clan_manager_update/sec/disband_clan")]
 pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -> Response<()> {
+    let jid = Jid::from(req.request.ticket);
+
     // Find the clan
     let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
 
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let clan = clan.unwrap();
 
     // Check if the user is allowed to disband the clan
-    if !clan.is_owner(&Jid::from(req.request.ticket)) {
+    let Some(owner) = clan.owner()
+    else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
+
+    if owner.jid != jid {
         return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_PERMISSION_DENIED);
     }
 
@@ -165,7 +170,7 @@ pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanI
     else { return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_INTERNAL_SERVER_ERROR) };
     
     if clan.is_none() {
-        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_BAD_REQUEST);
+        return Response::error(ErrorCode::SCE_NP_CLANS_SERVER_ERROR_NO_SUCH_CLAN);
     }
 
     let mut clan = clan.unwrap();

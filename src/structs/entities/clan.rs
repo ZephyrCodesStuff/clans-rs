@@ -111,26 +111,40 @@ impl Clan {
     /// Returns the role of the given player, in the clan.
     pub fn role_of(&self, jid: &Jid) -> Option<&Role> {
         self.members.iter()
-            .find(|player| player.jid.username == jid.username)
+            .find(|player| player.jid == *jid)
             .map(|player| &player.role)
     }
 
     /// Returns the status of the given player, in the clan.
     pub fn status_of(&self, jid: &Jid) -> Option<&Status> {
         self.members.iter()
-            .find(|player| player.jid.username == jid.username)
+            .find(|player| player.jid == *jid)
             .map(|player| &player.status)
+    }
+
+    /// Returns whether a player is a member of the clan.
+    pub fn is_member(&self, jid: &Jid) -> bool {
+        self.members.iter()
+            .any(|player| player.jid == *jid && player.status == Status::Member)
     }
 
     /// Returns whether a player is allowed to perform administrative actions.
     pub fn is_mod(&self, jid: &Jid) -> bool {
         self.members.iter()
-            .any(|player| player.jid.username == jid.username && player.role >= Role::SubLeader)
+            .any(|player| player.jid == *jid && player.role >= Role::SubLeader)
     }
 
-    /// Returns whether a player is the owner of the clan.
-    pub fn is_owner(&self, jid: &Jid) -> bool {
+    /// Returns whether a player is blacklisted from the clan.
+    pub fn is_blacklisted(&self, jid: &Jid) -> bool {
+        self.blacklist.iter()
+            .any(|blacklisted| blacklisted == jid)
+    }
+
+    /// Returns the owner of the clan.
+    /// 
+    /// Ideally, this should never be `None`.
+    pub fn owner(&self) -> Option<&Player> {
         self.members.iter()
-            .any(|player| player.jid.username == jid.username && player.role == Role::Leader)
+            .find(|player| player.role == Role::Leader)
     }
 }

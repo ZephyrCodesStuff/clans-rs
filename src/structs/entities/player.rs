@@ -14,7 +14,7 @@ use super::ticket::Ticket;
 /// - ``PlayStation Network``'s domain.
 /// 
 /// Example: ``username@a1.us.np.playstation.net``
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone)]
 pub struct Jid {
     /// The player's username.
     pub username: String,
@@ -24,6 +24,12 @@ pub struct Jid {
 
     /// The player's account region.
     pub region: String,
+}
+
+impl PartialEq for Jid {
+    fn eq(&self, other: &Self) -> bool {
+        self.username == other.username
+    }
 }
 
 impl From<String> for Jid {
