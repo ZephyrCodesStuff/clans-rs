@@ -58,15 +58,26 @@ async fn main() -> std::io::Result<()> {
             // Members
             .service(routes::members::get_member_list)
             .service(routes::members::get_member_info)
+            .service(routes::members::kick_member)
+            .service(routes::members::change_member_role)
+            .service(routes::members::update_member_info)
 
             // Announcements
             .service(routes::announcements::retrieve_announcements)
             .service(routes::announcements::post_announcement)
+            .service(routes::announcements::delete_announcement)
 
             // Invites
             .service(routes::invites::send_invitation)
             .service(routes::invites::cancel_invitation)
+            .service(routes::invites::accept_invitation)
+            .service(routes::invites::decline_invitation)
+
+            // Membership requests
             .service(routes::invites::request_membership)
+            .service(routes::invites::cancel_request_membership)
+            .service(routes::invites::accept_membership_request)
+            .service(routes::invites::decline_membership_request)
 
             // Fallback handler
             .default_service(actix_web::web::to(|| async {

@@ -106,6 +106,18 @@ pub enum Role {
     Leader = 4,
 }
 
+impl From<u32> for Role {
+    fn from(role: u32) -> Self {
+        match role {
+            1 => Self::NonMember,
+            2 => Self::Member,
+            3 => Self::SubLeader,
+            4 => Self::Leader,
+            _ => Self::Unknown,
+        }
+    }
+}
+
 impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -162,6 +174,9 @@ pub struct Player {
     /// The player's status pertaining to the clan.
     pub status: Status,
 
+    /// The player's display name.
+    pub online_name: String,
+
     /// The player's description.
     /// 
     /// Currently it is unknown where this is displayed.
@@ -173,6 +188,12 @@ pub struct Player {
     /// 
     /// The default value for ``allowMsg`` is ``false``.
     pub allow_msg: bool,
+
+    /// Unknown use.
+    pub bin_data: String,
+
+    /// Unknown use.
+    pub size: u32,
 }
 
 impl Default for Player {
@@ -181,8 +202,11 @@ impl Default for Player {
             jid: Jid::default(),
             role: Role::Unknown,
             status: Status::Unknown,
+            online_name: String::new(),
             description: String::new(),
             allow_msg: false,
+            bin_data: String::new(),
+            size: 0,
         }
     }
 }
