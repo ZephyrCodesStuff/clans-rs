@@ -20,8 +20,6 @@ services:
   clans-mongo:
     image: mongo:latest
     container_name: clans-mongo
-    ports:
-      - "27017:27017"
     networks:
       - clans
     volumes:
