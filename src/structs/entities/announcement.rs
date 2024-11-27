@@ -72,6 +72,7 @@ impl From<PostAnnouncement> for Announcement {
             subject: request.subject,
             msg: request.msg,
             date_expire: Utc::now() + chrono::Duration::seconds(request.expire_date as i64),
+            author: Jid::from(request.ticket),
             ..Default::default()
         }
     }
@@ -81,5 +82,10 @@ impl Announcement {
     /// Returns the ID of the announcement.
     pub const fn id(&self) -> Id {
         self.id
+    }
+
+    /// Returns whether the announcement has expired.
+    pub fn has_expired(&self) -> bool {
+        self.date_expire < Utc::now()
     }
 }

@@ -23,6 +23,7 @@ pub struct RetrieveAnnouncements {
 
 /// Request to post a new announcement for a clan.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct PostAnnouncement {
     /// A PSN ticket for authenticating the request.
     pub ticket: Ticket,
@@ -43,6 +44,7 @@ pub struct PostAnnouncement {
 
 /// Request to delete an announcement.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct DeleteAnnouncement {
     /// A PSN ticket for authenticating the request.
     pub ticket: Ticket,

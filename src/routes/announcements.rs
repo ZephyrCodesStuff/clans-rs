@@ -27,6 +27,7 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
         .iter()
         .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
+        .filter(|m| !m.has_expired())
         .map(|m| AnnouncementInfo::from(m.to_owned()))
         .collect::<Vec<AnnouncementInfo>>();
 
@@ -43,7 +44,7 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
 /// Publish a new announcement for a clan.
 /// 
 /// The author needs to:
-///    - Be a member of the clan
+///     - Be at least a SubLeader of the clan
 #[post("/clan_manager_update/sec/post_announcement")]
 pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnouncement>) -> Response<IdEntity> {
     let jid = Jid::from(req.request.ticket.clone());
@@ -54,7 +55,7 @@ pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnoun
     };
 
     // Check if the author has permissions to post an announcement
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
+    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -73,8 +74,7 @@ pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnoun
 /// Delete an announcement from a clan.
 /// 
 /// The author needs to:
-///     - Be a member of the clan
-///     - Be the author of the announcement OR have a role of SubLeader or higher
+///     - Be at least a SubLeader of the clan
 #[post("/clan_manager_update/sec/delete_announcement")]
 pub async fn delete_announcement(database: Data<Database>, req: Request<DeleteAnnouncement>) -> Response<()> {
     let jid = Jid::from(req.request.ticket.clone());
@@ -85,24 +85,15 @@ pub async fn delete_announcement(database: Data<Database>, req: Request<DeleteAn
     };
 
     // Check if the author has permissions to delete the announcement
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
-        return Response::error(ErrorCode::PermissionDenied);
-    }
-
-    // Find the announcement
-    let index = clan.announcements.iter().position(|a| a.id() == req.request.msg_id);
-    if index.is_none() {
-        return Response::error(ErrorCode::NoSuchClanAnnouncement);
-    }
-
-    // Check if the author has permissions to delete the announcement
-    let announcement = clan.announcements.get(index.unwrap()).unwrap();
-    if announcement.author != jid && !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
+    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Remove the announcement
-    clan.announcements.remove(index.unwrap());
+    let Some(index) = clan.announcements.iter().position(|m| m.id() == req.request.msg_id)
+    else { return Response::error(ErrorCode::NoSuchClanAnnouncement) };
+
+    clan.announcements.remove(index);
 
     // Update the clan
     if let Err(e) = clan.save(&database).await { return Response::error(e); }

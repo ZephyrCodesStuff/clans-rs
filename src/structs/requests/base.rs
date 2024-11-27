@@ -20,6 +20,9 @@ impl<'a, T: Deserialize<'a>> FromRequest for Request<T> {
         let fut = actix_web::web::Bytes::from_request(req, payload);
         Box::pin(async move {
             let bytes = fut.await?;
+            
+            log::debug!("{}", String::from_utf8_lossy(&bytes));
+
             let request = serde_xml_rs::from_reader(bytes.reader())
                 .map_err(actix_web::error::ErrorInternalServerError)?;
 

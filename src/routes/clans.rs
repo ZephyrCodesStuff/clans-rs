@@ -15,7 +15,7 @@ use crate::{
     structs::{
         entities::{
             clan::Clan,
-            player::{Jid, Role},
+            player::{Jid, Status},
         }, requests::{base::Request, clans::{ClanSearch, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
             entities::{ClanInfo, ClanPlayerInfo, ClanSearchInfo, IdEntity}, error::ErrorCode,
@@ -155,10 +155,10 @@ pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -
     Response::success(Content::Empty)
 }
 
-/// Update a clan's info.
+/// Update a member's information in a clan.
 /// 
 /// - The author needs to:
-///     - Be a SubLeader or higher
+///     - Be a member of the clan
 #[post("/clan_manager_update/sec/update_clan_info")]
 pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanInfo>) -> Response<()> {
     let mut clan = match Clan::resolve(req.request.id, &database).await {
@@ -167,9 +167,7 @@ pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanI
     };
 
     // Check if the user is allowed to update the clan's info
-    if !clan.role_of(&Jid::from(req.request.ticket))
-        .map_or(false, |role| role >= &Role::SubLeader
-    ) {
+    if !clan.status_of(&Jid::from(req.request.ticket)).map_or(false, |status| status == &Status::Member) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
