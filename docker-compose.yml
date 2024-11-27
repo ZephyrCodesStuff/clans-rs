@@ -1,0 +1,35 @@
+services:
+  clans:
+    image: ghcr.io/zephyrcodesstuff/clans:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clans-api
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - RUST_LOG=${LOG_LEVEL:-info}
+      - MONGO_URI=mongodb://clans-mongo:27017/clans
+    ports:
+      - "42073:8080"
+    networks:
+      - clans
+    depends_on:
+      - clans-mongo
+
+  clans-mongo:
+    image: mongo:latest
+    container_name: clans-mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - clans
+    volumes:
+      - clans-data:/data/db
+
+volumes:
+  clans-data:
+
+networks:
+  clans:
+    name: clans-network
