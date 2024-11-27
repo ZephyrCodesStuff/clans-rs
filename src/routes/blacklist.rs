@@ -25,7 +25,7 @@ pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>)
     // Collect all valid entries
     let items = clan.blacklist
         .iter()
-        .skip((req.request.start - 1) as usize)
+        .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(|m| BlacklistEntry::from(m.to_owned()))
         .collect::<Vec<BlacklistEntry>>();
@@ -50,6 +50,8 @@ pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>)
 #[post("/clan_manager_update/sec/record_blacklist_entry")]
 pub async fn record_blacklist_entry(database: Data<Database>, req: Request<RecordBlacklistEntry>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
 
     let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
     else { return Response::error(ErrorCode::InternalServerError) };
@@ -65,7 +67,7 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     }
 
     // Add the player to the blacklist
-    clan.blacklist.push(Jid::from(req.request.jid));
+    clan.blacklist.push(target);
 
     // Update the clan
     if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {
@@ -86,6 +88,8 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
 #[post("/clan_manager_update/sec/delete_blacklist_entry")]
 pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<DeleteBlacklistEntry>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
 
     // Find the clan
     let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
@@ -97,17 +101,17 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&Jid::from(req.request.jid.clone())).map_or(false, |status| status == &Status::Member) {
+    if clan.status_of(&target).map_or(false, |status| status == &Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
     // Check if the player is blacklisted
-    if !clan.is_blacklisted(&Jid::from(req.request.jid.clone())) {
+    if !clan.is_blacklisted(&target) {
         return Response::error(ErrorCode::NoSuchBlacklistEntry);
     }
 
     // Remove the player from the blacklist
-    clan.blacklist.retain(|j| j != &Jid::from(req.request.jid.clone()));
+    clan.blacklist.retain(|j| j != &target);
 
     // Update the clan
     if database.clans.replace_one(doc! { "id": clan.id() }, clan).await.is_err() {

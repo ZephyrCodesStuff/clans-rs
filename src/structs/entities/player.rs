@@ -32,19 +32,29 @@ impl PartialEq for Jid {
     }
 }
 
-impl From<String> for Jid {
-    fn from(jid: String) -> Self {
-        let mut parts = jid.split('@');
+impl TryFrom<String> for Jid {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let mut parts = value.split('@');
+
+        if parts.clone().count() != 2 { // username, a1.us.np.playstation.net
+            return Err("Invalid JID format.");
+        }
 
         let username = parts.next().unwrap_or_default().to_string();
         let psn = parts.next().unwrap_or_default();
 
         let mut parts = psn.split('.');
 
+        if parts.clone().count() != 5 { // a1, us, np, playstation, net
+            return Err("Invalid JID format.");
+        }
+
         let domain = parts.next().unwrap_or_default().to_string();
         let region = parts.next().unwrap_or_default().to_string();
 
-        Self { username, domain, region }
+        Ok(Self { username, domain, region })
     }
 }
 
@@ -69,7 +79,7 @@ impl<'de> Deserialize<'de> for Jid {
         D: serde::de::Deserializer<'de>,
     {
         let jid = String::deserialize(deserializer)?;
-        Ok(Self::from(jid))
+        Self::try_from(jid).map_err(serde::de::Error::custom)
     }
 }
 

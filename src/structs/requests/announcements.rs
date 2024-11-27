@@ -15,10 +15,10 @@ pub struct RetrieveAnnouncements {
     pub id: ClanId,
 
     /// How many announcements to skip.
-    pub start: u32,
+    pub start: i32,
 
     /// How many announcements to return.
-    pub max: u32,
+    pub max: i32,
 }
 
 /// Request to post a new announcement for a clan.

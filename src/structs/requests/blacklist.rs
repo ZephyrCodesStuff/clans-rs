@@ -16,10 +16,10 @@ pub struct GetBlacklist {
     pub id: Id,
 
     /// How many members to skip.
-    pub start: u32,
+    pub start: i32,
 
     /// How many members to return.
-    pub max: u32,
+    pub max: i32,
 }
 
 /// Request to add a player to a clan's blacklist.

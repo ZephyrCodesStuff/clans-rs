@@ -50,8 +50,9 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     // Collect all valid entries
     let mut data: Vec<Clan> = vec![];
     while let Some (clan) = clans.next().await {
-        if let Ok(clan) = clan {
-            data.push(clan);
+        match clan {
+            Ok(clan) => data.push(clan),
+            Err(e) => log::error!("Error while fetching clan: {}", e),
         }
     }
 
@@ -60,7 +61,7 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     // Format them from the perspective of the player
     let items: Vec<ClanPlayerInfo> = data
         .into_iter()
-        .skip((req.request.start - 1) as usize)
+        .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(|clan| ClanPlayerInfo::from((clan, jid.clone())))
         .collect();
@@ -101,7 +102,7 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>, byt
     // Format them from the perspective of the player
     let items: Vec<ClanSearchInfo> = data
         .into_iter()
-        .skip((req.request.start - 1) as usize)
+        .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(ClanSearchInfo::from)
         .collect();

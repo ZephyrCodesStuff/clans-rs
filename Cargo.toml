@@ -43,6 +43,9 @@ perf = "warn"
 
 # Override some of the default lints
 multiple_crate_versions = { level = "allow", priority = 1 }
+cast_sign_loss = { level = "allow", priority = 1 }
+cast_possible_truncation = { level = "allow", priority = 1 }
+
 missing_docs_in_private_items = { level = "deny", priority = 1 }
 
 [lints.rust]

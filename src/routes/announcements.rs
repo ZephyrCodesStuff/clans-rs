@@ -8,7 +8,6 @@ use crate::{database::Database, structs::{entities::{announcement::Announcement,
 /// 
 /// The author needs to:
 ///   - Be a member of the clan
-#[allow(clippy::cast_possible_truncation)]
 #[post("/clan_manager_view/sec/retrieve_announcements")]
 pub async fn retrieve_announcements(database: Data<Database>, req: Request<RetrieveAnnouncements>) -> Response<AnnouncementInfo> {
     let jid = Jid::from(req.request.ticket.clone());
@@ -24,7 +23,7 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
     // Collect all valid entries
     let items = clan.announcements
         .iter()
-        .skip((req.request.start - 1) as usize)
+        .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(|m| AnnouncementInfo::from(m.to_owned()))
         .collect::<Vec<AnnouncementInfo>>();

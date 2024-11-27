@@ -11,7 +11,7 @@ use crate::structs::{
 #[derive(Debug, Deserialize)]
 pub struct CreateClan {
     /// A PSN ticket for authenticating the request.
-    pub ticket: String,
+    pub ticket: Ticket,
 
     /// The name of the clan.
     pub name: String,
@@ -47,20 +47,20 @@ pub struct GetClanList {
     pub ticket: Ticket,
 
     /// How many clans to skip.
-    pub start: u32,
+    pub start: i32,
 
     /// How many clans to return.
-    pub max: u32,
+    pub max: i32,
 }
 
 /// Request to get a list of clans.
 #[derive(Debug, Deserialize)]
 pub struct ClanSearch {
     /// How many clans to skip.
-    pub start: u32,
+    pub start: i32,
 
     /// How many clans to return.
-    pub max: u32,
+    pub max: i32,
 }
 
 /// Request to get info about a clan.

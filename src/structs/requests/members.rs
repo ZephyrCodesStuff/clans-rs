@@ -15,10 +15,10 @@ pub struct GetMemberList {
     pub id: Id,
 
     /// How many members to skip.
-    pub start: u32,
+    pub start: i32,
 
     /// How many members to return.
-    pub max: u32,
+    pub max: i32,
 }
 
 /// Request to get info about a member.

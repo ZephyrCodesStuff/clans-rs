@@ -25,7 +25,7 @@ pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberLis
     // Collect all valid entries
     let items = clan.members
         .iter()
-        .skip((req.request.start - 1) as usize)
+        .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(|m| PlayerBasicInfo::from(m.to_owned()))
         .collect::<Vec<PlayerBasicInfo>>();
@@ -57,7 +57,8 @@ pub async fn get_member_info(database: Data<Database>, req: Request<GetMemberInf
     }
     
     // Find the player
-    let target = Jid::from(req.request.jid.clone());
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
 
     let Some(player) = clan.members.iter().find(|p| p.jid == target)
     else { return Response::error(ErrorCode::NoSuchClanMember) };
@@ -75,7 +76,8 @@ pub async fn get_member_info(database: Data<Database>, req: Request<GetMemberInf
 #[post("/clan_manager_update/sec/kick_member")]
 pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> Response<()> {
     let author = Jid::from(req.request.ticket);
-    let target = Jid::from(req.request.jid.clone());
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
 
     let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
     else { return Response::error(ErrorCode::InternalServerError) };
@@ -114,7 +116,8 @@ pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> 
 #[post("/clan_manager_update/sec/change_member_role")]
 pub async fn change_member_role(database: Data<Database>, req: Request<ChangeMemberRole>) -> Response<()> {
     let author = Jid::from(req.request.ticket);
-    let target = Jid::from(req.request.jid.clone());
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
 
     let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
     else { return Response::error(ErrorCode::InternalServerError) };
@@ -158,7 +161,10 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&Jid::from(req.request.jid.clone())).map_or(false, |status| status != &Status::Member) {
+    let Ok(target) = Jid::try_from(req.request.jid.clone())
+    else { return Response::error(ErrorCode::InvalidNpId) };
+
+    if clan.status_of(&target).map_or(false, |status| status != &Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
