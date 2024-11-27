@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{database::Database, structs::responses::error::ErrorCode};
 
-use super::player::{Jid, Player, Role, Status};
+use super::{announcement::Announcement, player::{Jid, Player, Role, Status}};
 
 /// Maximum number of clans that can exist in the game.
 const MAX_CLAN_COUNT: u32 = 1_000_000;
@@ -56,18 +56,17 @@ pub struct Clan {
     /// Players that are banned from joining the clan.
     pub blacklist: Vec<Jid>,
 
+    /// Announcements posted to the clan.
+    pub announcements: Vec<Announcement>,
+
     /// Creation date of the clan, in UTC.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub date_created: DateTime<Utc>,
-
-    /// Last time the clan was updated, in UTC.
-    /// 
-    /// NOTE: This isn't needed by the game, but it's useful for statistics.
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub last_updated: DateTime<Utc>,
     
     /// If this flag is `true`, then the clan should
     /// automatically accept any player that requests to join.
+    /// 
+    /// Currently it is unknown how one would set this flag, from the game.
     pub auto_accept: bool,
 
     /// Unknown use.
@@ -95,8 +94,8 @@ impl Default for Clan {
             description: String::new(),
             members: Vec::new(),
             blacklist: Vec::new(),
+            announcements: Vec::new(),
             date_created: Utc::now(),
-            last_updated: Utc::now(),
             auto_accept: false,
             int_attr1: 0,
             int_attr2: 0,
@@ -108,6 +107,14 @@ impl Default for Clan {
 
 
 impl Clan {
+    /// Fetch the clan from the database.
+    pub async fn resolve(id: Id, database: &Data<Database>) -> Result<Self, ErrorCode> {
+        database.clans.find_one(doc! { "id": id })
+            .await
+            .map_err(|_| ErrorCode::InternalServerError)
+            .and_then(|clan| clan.ok_or(ErrorCode::NoSuchClan))
+    }
+
     /// Save the clan in the database.
     /// 
     /// This will replace the clan's document altogether and,
@@ -133,6 +140,14 @@ impl Clan {
         self.id
     }
 
+    /// Returns the owner of the clan.
+    /// 
+    /// Ideally, this should never be `None`.
+    pub fn owner(&self) -> Option<&Player> {
+        self.members.iter()
+            .find(|player| player.role == Role::Leader)
+    }
+
     /// Returns the role of the given player, in the clan.
     pub fn role_of(&self, jid: &Jid) -> Option<&Role> {
         self.members.iter()
@@ -145,31 +160,11 @@ impl Clan {
         self.members.iter()
             .find(|player| player.jid == *jid)
             .map(|player| &player.status)
-    }
-
-    /// Returns whether a player is a member of the clan.
-    pub fn is_member(&self, jid: &Jid) -> bool {
-        self.members.iter()
-            .any(|player| player.jid == *jid && player.status == Status::Member)
-    }
-
-    /// Returns whether a player is allowed to perform administrative actions.
-    pub fn is_mod(&self, jid: &Jid) -> bool {
-        self.members.iter()
-            .any(|player| player.jid == *jid && player.role >= Role::SubLeader)
-    }
-
+        }
+        
     /// Returns whether a player is blacklisted from the clan.
     pub fn is_blacklisted(&self, jid: &Jid) -> bool {
         self.blacklist.iter()
             .any(|blacklisted| blacklisted == jid)
-    }
-
-    /// Returns the owner of the clan.
-    /// 
-    /// Ideally, this should never be `None`.
-    pub fn owner(&self) -> Option<&Player> {
-        self.members.iter()
-            .find(|player| player.role == Role::Leader)
     }
 }

@@ -15,10 +15,10 @@ use crate::{
     structs::{
         entities::{
             clan::Clan,
-            player::Jid,
+            player::{Jid, Role},
         }, requests::{base::Request, clans::{ClanSearch, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
-            entities::{ClanId, ClanInfo, ClanPlayerInfo, ClanSearchInfo}, error::ErrorCode,
+            entities::{ClanInfo, ClanPlayerInfo, ClanSearchInfo, IdEntity}, error::ErrorCode,
         }
     },
 };
@@ -118,7 +118,7 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>, byt
 
 /// Create a clan.
 #[post("/clan_manager_update/sec/create_clan")]
-pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> Response<ClanId> {
+pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> Response<IdEntity> {
     let clan = Clan::from(req.request);
 
     // Save the clan to the database.
@@ -128,19 +128,15 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
 }
 
 /// Disband a clan.
+/// 
+/// - The author needs to:
+///    - Be the owner of the clan
 #[post("/clan_manager_update/sec/disband_clan")]
 pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    // Find the clan
-    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    let Ok(clan) = Clan::resolve(req.request.id, &database).await
     else { return Response::error(ErrorCode::InternalServerError) };
-
-    if clan.is_none() {
-        return Response::error(ErrorCode::NoSuchClan);
-    }
-
-    let clan = clan.unwrap();
 
     // Check if the user is allowed to disband the clan
     let Some(owner) = clan.owner()
@@ -157,20 +153,18 @@ pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -
 }
 
 /// Update a clan's info.
+/// 
+/// - The author needs to:
+///     - Be a SubLeader or higher
 #[post("/clan_manager_update/sec/update_clan_info")]
 pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanInfo>) -> Response<()> {
-    // Find the clan
-    let Ok(clan) = database.clans.find_one(doc! { "id": req.request.id }).await
+    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
     else { return Response::error(ErrorCode::InternalServerError) };
-    
-    if clan.is_none() {
-        return Response::error(ErrorCode::NoSuchClan);
-    }
-
-    let mut clan = clan.unwrap();
 
     // Check if the user is allowed to update the clan's info
-    if !clan.is_mod(&Jid::from(req.request.ticket)) {
+    if !clan.role_of(&Jid::from(req.request.ticket))
+        .map_or(false, |role| role >= &Role::SubLeader
+    ) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
