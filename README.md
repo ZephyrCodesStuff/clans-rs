@@ -34,7 +34,6 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 #### Membership requests
 - [x] `/clan_manager_update/sec/accept_membership_request`
 - [x] `/clan_manager_update/sec/decline_membership_request`
-
 - [x] `/clan_manager_update/sec/request_membership`
 - [x] `/clan_manager_update/sec/cancel_request_membership`
 
@@ -50,7 +49,6 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 - [x] `/clan_manager_update/sec/create_clan`
 - [x] `/clan_manager_update/sec/update_clan_info`
 - [x] `/clan_manager_update/sec/disband_clan`
-
 - [x] `/clan_manager_update/sec/join_clan`
 - [x] `/clan_manager_update/sec/leave_clan`
 
