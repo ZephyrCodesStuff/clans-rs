@@ -18,8 +18,10 @@ use crate::{database::Database, structs::{entities::{clan::Clan, player::{Jid, P
 pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitation>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to invite the player
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
@@ -63,8 +65,10 @@ pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitati
 pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvitation>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to cancel the invitation
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
@@ -95,8 +99,10 @@ pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvi
 pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvitation>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user has been blacklisted
     if clan.is_blacklisted(&jid) {
@@ -127,8 +133,10 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
 pub async fn decline_invitation(database: Data<Database>, req: Request<DeclineInvitation>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user has been invited
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Invited) {
@@ -154,8 +162,10 @@ pub async fn decline_invitation(database: Data<Database>, req: Request<DeclineIn
 pub async fn request_membership(database: Data<Database>, req: Request<RequestMembership>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user has already been invited or is already pending approval
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member || status == &Status::Invited || status == &Status::Pending) {
@@ -191,8 +201,10 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
 pub async fn cancel_request_membership(database: Data<Database>, req: Request<CancelRequestMembership>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user has already been invited or is already pending approval
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Pending) {
@@ -220,8 +232,10 @@ pub async fn cancel_request_membership(database: Data<Database>, req: Request<Ca
 pub async fn accept_membership_request(database: Data<Database>, req: Request<AcceptMembershipRequest>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to accept the player
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
@@ -254,8 +268,10 @@ pub async fn accept_membership_request(database: Data<Database>, req: Request<Ac
 pub async fn decline_membership_request(database: Data<Database>, req: Request<DeclineMembershipRequest>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to decline the player
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {

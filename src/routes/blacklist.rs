@@ -19,8 +19,10 @@ use crate::{database::Database, structs::{
 #[post("/clan_manager_view/sec/get_blacklist")]
 #[allow(clippy::cast_possible_truncation)]
 pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>) -> Response<BlacklistEntry> {
-    let Ok(clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Collect all valid entries
     let items = clan.blacklist
@@ -53,8 +55,10 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     let Ok(target) = Jid::try_from(req.request.jid.clone())
     else { return Response::error(ErrorCode::InvalidNpId) };
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to add to the blacklist
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
@@ -92,8 +96,10 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     else { return Response::error(ErrorCode::InvalidNpId) };
 
     // Find the clan
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to remove from the blacklist
     if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {

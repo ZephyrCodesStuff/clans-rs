@@ -136,8 +136,10 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
 pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -> Response<()> {
     let jid = Jid::from(req.request.ticket);
 
-    let Ok(clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to disband the clan
     let Some(owner) = clan.owner()
@@ -159,8 +161,10 @@ pub async fn disband_clan(database: Data<Database>, req: Request<DisbandClan>) -
 ///     - Be a SubLeader or higher
 #[post("/clan_manager_update/sec/update_clan_info")]
 pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanInfo>) -> Response<()> {
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to update the clan's info
     if !clan.role_of(&Jid::from(req.request.ticket))

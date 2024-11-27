@@ -19,8 +19,10 @@ use crate::{database::Database, structs::{
 #[post("/clan_manager_view/sec/get_member_list")]
 #[allow(clippy::cast_possible_truncation)]
 pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberList>) -> Response<PlayerBasicInfo> {
-    let Ok(clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Collect all valid entries
     let items = clan.members
@@ -48,8 +50,10 @@ pub async fn get_member_list(database: Data<Database>, req: Request<GetMemberLis
 pub async fn get_member_info(database: Data<Database>, req: Request<GetMemberInfo>) -> Response<PlayerInfo> {
     let author = Jid::from(req.request.ticket);
 
-    let Ok(clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to view the player's info
     if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {
@@ -79,8 +83,10 @@ pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> 
     let Ok(target) = Jid::try_from(req.request.jid.clone())
     else { return Response::error(ErrorCode::InvalidNpId) };
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to kick the player
     if !clan.role_of(&author).map_or(false, |role| role >= &Role::SubLeader) {
@@ -119,8 +125,10 @@ pub async fn change_member_role(database: Data<Database>, req: Request<ChangeMem
     let Ok(target) = Jid::try_from(req.request.jid.clone())
     else { return Response::error(ErrorCode::InvalidNpId) };
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to change the player's role
     if !clan.role_of(&author).map_or(false, |role| role >= &Role::SubLeader) {
@@ -152,8 +160,10 @@ pub async fn change_member_role(database: Data<Database>, req: Request<ChangeMem
 pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMemberInfo>) -> Response<()> {
     let author = Jid::from(req.request.ticket);
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the user is allowed to update the player's info
     if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {

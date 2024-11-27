@@ -111,8 +111,8 @@ impl Clan {
     pub async fn resolve(id: Id, database: &Data<Database>) -> Result<Self, ErrorCode> {
         database.clans.find_one(doc! { "id": id })
             .await
-            .map_err(|_| ErrorCode::InternalServerError)
-            .and_then(|clan| clan.ok_or(ErrorCode::NoSuchClan))
+            .map_err(|_| ErrorCode::InternalServerError)?
+            .ok_or(ErrorCode::NoSuchClan)
     }
 
     /// Save the clan in the database.

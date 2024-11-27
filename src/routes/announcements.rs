@@ -12,8 +12,10 @@ use crate::{database::Database, structs::{entities::{announcement::Announcement,
 pub async fn retrieve_announcements(database: Data<Database>, req: Request<RetrieveAnnouncements>) -> Response<AnnouncementInfo> {
     let jid = Jid::from(req.request.ticket.clone());
 
-    let Ok(clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to view the announcements
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
@@ -46,8 +48,10 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
 pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnouncement>) -> Response<IdEntity> {
     let jid = Jid::from(req.request.ticket.clone());
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to post an announcement
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
@@ -75,8 +79,10 @@ pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnoun
 pub async fn delete_announcement(database: Data<Database>, req: Request<DeleteAnnouncement>) -> Response<()> {
     let jid = Jid::from(req.request.ticket.clone());
 
-    let Ok(mut clan) = Clan::resolve(req.request.id, &database).await
-    else { return Response::error(ErrorCode::InternalServerError) };
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
 
     // Check if the author has permissions to delete the announcement
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
