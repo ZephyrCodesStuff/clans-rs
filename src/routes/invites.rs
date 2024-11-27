@@ -168,7 +168,7 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     };
 
     // Check if the user has already been invited or is already pending approval
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member || status == &Status::Invited || status == &Status::Pending) {
+    if clan.status_of(&jid).map_or(false, |status| status == &Status::Member || status == &Status::Invited || status == &Status::Pending) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -177,11 +177,14 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
         return Response::error(ErrorCode::Blacklisted);
     }
 
+    // Determine the player's role and status based on the clan's auto-accept setting
+    let (role, status) = if clan.auto_accept { (Role::Member, Status::Member) } else { (Role::NonMember, Status::Pending) };
+
     // Request membership
     let player = Player {
         jid,
-        role: Role::NonMember,
-        status: Status::Pending,
+        role,
+        status,
         ..Default::default()
     };
 
@@ -248,7 +251,7 @@ pub async fn accept_membership_request(database: Data<Database>, req: Request<Ac
     }
 
     // Check if the user has requested to join
-    if !clan.status_of(&req.request.jid).map_or(false, |status| status != &Status::Pending) {
+    if !clan.status_of(&req.request.jid).map_or(false, |status| status == &Status::Pending) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 

@@ -66,7 +66,7 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
+    if clan.status_of(&target).map_or(false, |status| status == &Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 

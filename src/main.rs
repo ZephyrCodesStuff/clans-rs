@@ -58,9 +58,11 @@ async fn main() -> std::io::Result<()> {
             // Members
             .service(routes::members::get_member_list)
             .service(routes::members::get_member_info)
-            .service(routes::members::kick_member)
             .service(routes::members::change_member_role)
             .service(routes::members::update_member_info)
+            .service(routes::members::kick_member)
+            .service(routes::members::join_clan)
+            .service(routes::members::leave_clan)
 
             // Announcements
             .service(routes::announcements::retrieve_announcements)

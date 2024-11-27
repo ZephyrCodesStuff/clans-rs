@@ -1,7 +1,7 @@
 //! Base XML structs for the responses of the API,
 //! wrapping the XML entities inside.
 
-use actix_web::{http::StatusCode, Responder};
+use actix_web::Responder;
 use xml::{writer::XmlEvent, EmitterConfig};
 
 use crate::{structs::responses::error::SUCCESS, utils::xml_format::ToXML};
@@ -55,12 +55,7 @@ impl<T: ToXML> Responder for Response<T> {
     type Body = actix_web::body::BoxBody;
 
     fn respond_to(self, _: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
-        let status_code = match self.status {
-			Status::Ok => StatusCode::OK,
-			Status::Err(code) => code.into()
-		};
-
-		let mut builder = actix_web::HttpResponse::build(status_code);
+		let mut builder = actix_web::HttpResponse::Ok();
 		for (key, value) in &HEADERS {
 			builder.append_header((*key, *value));
 		}
@@ -99,7 +94,7 @@ pub enum Status {
 
 impl std::fmt::Display for Status {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "{:02}", match self {
+		write!(f, "{:02X}", match self {
 			Self::Ok => SUCCESS,
 			Self::Err(code) => *code as u8
 		})

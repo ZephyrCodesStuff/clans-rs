@@ -1,6 +1,5 @@
 //! Error response structures.
 
-use actix_web::http::StatusCode;
 use serde::Serialize;
 
 /// Success response code.
@@ -149,49 +148,4 @@ pub enum ErrorCode {
     /// 
     /// This is never triggered by us, so it's currently unused.
     FailedToSendNpMessage = 0x4C,
-}
-
-#[allow(clippy::from_over_into)]
-#[allow(clippy::match_same_arms)]
-impl Into<StatusCode> for ErrorCode {
-	fn into(self) -> StatusCode {
-		match self {
-			Self::BadRequest                    => StatusCode::BAD_REQUEST,
-			Self::InvalidTicket                 => StatusCode::UNAUTHORIZED,
-			Self::InvalidSignature              => StatusCode::UNAUTHORIZED,
-			Self::TicketExpired                 => StatusCode::UNAUTHORIZED,
-			Self::InvalidNpId                   => StatusCode::UNAUTHORIZED,
-			Self::Forbidden                     => StatusCode::FORBIDDEN,
-			Self::InternalServerError           => StatusCode::INTERNAL_SERVER_ERROR,
-			Self::Banned                        => StatusCode::FORBIDDEN,
-            Self::Blacklisted                   => StatusCode::FORBIDDEN,
-            Self::InvalidEnvironment            => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::NoSuchClanService             => StatusCode::NOT_FOUND,
-            Self::NoSuchClan                    => StatusCode::NOT_FOUND,
-            Self::NoSuchClanMember              => StatusCode::NOT_FOUND,
-            Self::BeforeHours                   => StatusCode::FORBIDDEN,
-            Self::ClosedService                 => StatusCode::FORBIDDEN,
-            Self::PermissionDenied              => StatusCode::FORBIDDEN,
-            Self::ClanLimitReached              => StatusCode::FORBIDDEN,
-            Self::ClanLeaderLimitReached        => StatusCode::FORBIDDEN,
-            Self::ClanMemberLimitReached        => StatusCode::FORBIDDEN,
-            Self::ClanJoinedLimitReached        => StatusCode::FORBIDDEN,
-            Self::MemberStatusInvalid           => StatusCode::BAD_REQUEST,
-            Self::DuplicatedClanName            => StatusCode::CONFLICT,
-            Self::ClanLeaderCannotLeave         => StatusCode::FORBIDDEN,
-            Self::InvalidRolePriority           => StatusCode::BAD_REQUEST,
-            Self::AnnouncementLimitReached      => StatusCode::FORBIDDEN,
-            Self::ClanConfigMasterNotFound      => StatusCode::NOT_FOUND,
-            Self::DuplicatedClanTag             => StatusCode::CONFLICT,
-            Self::ExceedsCreateClanFrequency    => StatusCode::TOO_MANY_REQUESTS,
-            Self::ClanPassphraseIncorrect       => StatusCode::FORBIDDEN,
-            Self::CannotRecordBlacklistEntry    => StatusCode::FORBIDDEN,
-            Self::NoSuchClanAnnouncement        => StatusCode::NOT_FOUND,
-            Self::VulgarWordsPosted             => StatusCode::FORBIDDEN,
-            Self::BlacklistLimitReached         => StatusCode::FORBIDDEN,
-            Self::NoSuchBlacklistEntry          => StatusCode::NOT_FOUND,
-            Self::InvalidNpMessageFormat        => StatusCode::BAD_REQUEST,
-            Self::FailedToSendNpMessage         => StatusCode::INTERNAL_SERVER_ERROR,
-		}
-	}
 }

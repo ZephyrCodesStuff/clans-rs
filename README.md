@@ -51,8 +51,8 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 - [x] `/clan_manager_update/sec/update_clan_info`
 - [x] `/clan_manager_update/sec/disband_clan`
 
-- [ ] `/clan_manager_update/sec/join_clan`
-- [ ] `/clan_manager_update/sec/leave_clan`
+- [x] `/clan_manager_update/sec/join_clan`
+- [x] `/clan_manager_update/sec/leave_clan`
 
 ### Members
 

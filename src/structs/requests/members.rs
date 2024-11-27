@@ -90,3 +90,23 @@ pub struct UpdateMemberInfo {
     /// Unknown use.
     pub size: u32,
 }
+
+/// Request to join a clan.
+#[derive(Debug, Deserialize)]
+pub struct JoinClan {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+}
+
+/// Request to leave a clan.
+#[derive(Debug, Deserialize)]
+pub struct LeaveClan {
+    /// A PSN ticket for authenticating the request.
+    pub ticket: Ticket,
+
+    /// The ID of the clan.
+    pub id: Id,
+}

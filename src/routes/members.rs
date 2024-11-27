@@ -9,7 +9,7 @@ use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
-    entities::{clan::Clan, player::{Jid, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, KickMember, UpdateMemberInfo}}, responses::{
+    entities::{clan::Clan, player::{Jid, Player, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, JoinClan, KickMember, LeaveClan, UpdateMemberInfo}}, responses::{
         base::{Content, List, Response},
         entities::{PlayerBasicInfo, PlayerInfo}, error::ErrorCode,
     }
@@ -185,6 +185,72 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
     member.allow_msg = req.request.allowmsg;
     member.bin_data = req.request.bin_attr1;
     member.size = req.request.size;
+
+    // Update the clan
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
+
+    Response::success(Content::Empty)
+}
+
+/// Join a clan.
+/// 
+/// The author needs to:
+///     - Not be a member of a clan
+/// 
+/// The clan needs to:
+///     - Have the ``auto_accept`` attribute set to ``true``.
+#[post("/clan_manager_update/sec/join_clan")]
+pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Response<()> {
+    let author = Jid::from(req.request.ticket);
+
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
+
+    // Check if the player is already in a clan
+    if clan.members.iter().any(|p| p.jid == author) {
+        return Response::error(ErrorCode::MemberStatusInvalid);
+    }
+
+    // Check if the clan accepts new members
+    if !clan.auto_accept {
+        return Response::error(ErrorCode::PermissionDenied);
+    }
+
+    // Add the player
+    clan.members.push(Player {
+        jid: author,
+        role: Role::Member,
+        ..Default::default()
+    });
+
+    // Update the clan
+    if let Err(e) = clan.save(&database).await { return Response::error(e); }
+
+    Response::success(Content::Empty)
+}
+
+/// Leave a clan.
+/// 
+/// The author needs to:
+///     - Be a member of the clan
+#[post("/clan_manager_update/sec/leave_clan")]
+pub async fn leave_clan(database: Data<Database>, req: Request<LeaveClan>) -> Response<()> {
+    let author = Jid::from(req.request.ticket);
+
+    let mut clan = match Clan::resolve(req.request.id, &database).await {
+        Ok(clan) => clan,
+        Err(e) => return Response::error(e),
+    };
+
+    // Check if the player is a member of the clan
+    if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {
+        return Response::error(ErrorCode::MemberStatusInvalid);
+    }
+
+    // Remove the player
+    clan.members.retain(|p| p.jid != author);
 
     // Update the clan
     if let Err(e) = clan.save(&database).await { return Response::error(e); }
