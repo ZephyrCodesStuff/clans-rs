@@ -63,7 +63,7 @@ impl From<Clan> for ClanInfo {
             name: clan.name,
             tag: clan.tag,
             description: clan.description,
-            members: clan.members.len() as u32,
+            members: clan.members.iter().filter(|p| p.status == Status::Member).count() as u32,
             date_created: clan.date_created,
             auto_accept: u8::from(clan.auto_accept),
             int_attr1: clan.int_attr1,
@@ -141,7 +141,7 @@ impl From<Clan> for ClanSearchInfo {
             id: clan.id(),
             name: clan.name,
             tag: clan.tag,
-            members: clan.members.len() as u32,
+            members: clan.members.iter().filter(|p| p.status == Status::Member).count() as u32,
         }
     }
 }
@@ -225,7 +225,7 @@ impl From<(Clan, Jid)> for ClanPlayerInfo {
             status: *status as u32,
             online_name: player.username.clone(),
             allow_msg,
-            members: clan.members.len() as u32,
+            members: clan.members.iter().filter(|p| p.status == Status::Member).count() as u32,
         }
     }
 }
