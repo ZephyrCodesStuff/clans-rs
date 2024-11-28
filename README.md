@@ -2,6 +2,12 @@
 
 A Rust 🦀 implementation of the Sony Clans API for the PlayStation 3 system.
 
+
+## Authors
+
+- [@zeph](https://www.github.com/ZephyrCodesStuff)
+
+
 ## License
 This project is licensed under the GPL-3.0 license. See the [LICENSE](LICENSE) file for more information.
 
@@ -14,8 +20,18 @@ In short,
 However,
 - You **must** include the original license in any redistribution.
 - You **must** disclose the source code of any modified versions of this project.
+## Used by
+
+This project is used by the [Destination Home](https://github.com/DestinationHome) team — a revival project for the PlayStation® 3 game "PlayStation Home".
+
+## Contributing
+
+Contributions are always welcome!
+
+To get started, simply fork the repo and do your edits, then make a PR to propose your changes, ideally describing them properly in the PR.
 
 ## ✅ Implementation status
+
 Below are all of the API endpoints that are available in the Sony Clans API.
 
 The ones that are marked with an "x" are the ones that have been implemented so far.
@@ -39,7 +55,7 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 
 ### Clans
 
-- [-] `/clan_manager_view/func/clan_search`
+- [ ] `/clan_manager_view/func/clan_search`
 - [x] `/clan_manager_view/func/get_clan_info`
 - [x] `/clan_manager_view/sec/get_clan_list`
 - [ ] `/clan_manager_view/func/get_clan_list_by_jid`
