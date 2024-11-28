@@ -7,6 +7,9 @@ A Rust 🦀 implementation of the Sony Clans API for the PlayStation 3 system.
 
 - [@zeph](https://www.github.com/ZephyrCodesStuff)
 
+## Used by
+
+This project is used by the [Destination Home](https://github.com/DestinationHome) team — a revival project for the PlayStation® 3 game "PlayStation Home".
 
 ## License
 This project is licensed under the GPL-3.0 license. See the [LICENSE](LICENSE) file for more information.
@@ -20,9 +23,6 @@ In short,
 However,
 - You **must** include the original license in any redistribution.
 - You **must** disclose the source code of any modified versions of this project.
-## Used by
-
-This project is used by the [Destination Home](https://github.com/DestinationHome) team — a revival project for the PlayStation® 3 game "PlayStation Home".
 
 ## Contributing
 
