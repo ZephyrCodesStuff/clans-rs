@@ -65,15 +65,13 @@ pub struct ChangeMemberRole {
 
 /// Request to update a member's information.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct UpdateMemberInfo {
     /// A PSN ticket for authenticating the request.
     pub ticket: Ticket,
 
     /// The ID of the clan.
     pub id: Id,
-
-    /// The JID of the player to update.
-    pub jid: String,
 
     /// The new display name for the player.
     pub onlinename: String,

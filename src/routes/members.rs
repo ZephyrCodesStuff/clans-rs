@@ -170,14 +170,6 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
         return Response::error(ErrorCode::PermissionDenied);
     }
 
-    // Check if the player is a member of the clan
-    let Ok(target) = Jid::try_from(req.request.jid.clone())
-    else { return Response::error(ErrorCode::InvalidNpId) };
-
-    if clan.status_of(&target).map_or(false, |status| status != &Status::Member) {
-        return Response::error(ErrorCode::MemberStatusInvalid);
-    }
-
     // Update the player's info
     let member = clan.members.iter_mut().find(|p| p.jid == author).unwrap();
     member.online_name = req.request.onlinename;
