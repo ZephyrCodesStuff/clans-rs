@@ -14,7 +14,7 @@ use xml::{writer::XmlEvent, EmitterConfig};
 use crate::{
     structs::entities::{
         announcement::{Announcement, Id as AnnouncementId},
-        clan::{Clan, Id as ClanId},
+        clan::{Clan, Id as ClanId, Platform, MAX_NAME_LENGTH},
         player::{Jid, Player, Role, Status},
     },
     utils::{self, xml_format::ToXML},
@@ -53,6 +53,7 @@ pub struct ClanInfo {
     int_attr2: u32,
     int_attr3: u32,
     size: u32,
+    platform: Platform
 }
 
 #[allow(clippy::cast_possible_truncation)]
@@ -70,6 +71,7 @@ impl From<Clan> for ClanInfo {
             int_attr2: clan.int_attr2,
             int_attr3: clan.int_attr3,
             size: clan.size,
+            platform: clan.platform
         }
     }
 }
@@ -85,8 +87,19 @@ impl ToXML for ClanInfo {
         let element = XmlEvent::start_element("info").attr("id", &clan_id);
         writer.write(element).ok();
 
+        // Check if the platform fits in the name, along with a space
+        let platform = self.platform.to_string();
+        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+            // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
+            // Format: `<name>[...] <platform>`
+            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
+            format!("{}... {}", &self.name[..name_len], platform)
+        } else {
+            format!("{} {}", &self.name, platform)
+        };
+
         for (elem, value) in [
-            ("name", &self.name),
+            ("name", pretty_name.as_str()),
             ("tag", &self.tag),
             ("members", &self.members.to_string()),
             (
@@ -132,6 +145,7 @@ pub struct ClanSearchInfo {
     name: String,
     tag: String,
     members: u32,
+    platform: Platform
 }
 
 #[allow(clippy::cast_possible_truncation)]
@@ -142,6 +156,7 @@ impl From<Clan> for ClanSearchInfo {
             name: clan.name,
             tag: clan.tag,
             members: clan.members.iter().filter(|p| p.status == Status::Member).count() as u32,
+            platform: clan.platform
         }
     }
 }
@@ -157,8 +172,19 @@ impl ToXML for ClanSearchInfo {
         let element = XmlEvent::start_element("info").attr("id", &clan_id);
         writer.write(element).ok();
 
+        // Check if the platform fits in the name, along with a space
+        let platform = self.platform.to_string();
+        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+            // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
+            // Format: `<name>[...] <platform>`
+            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
+            format!("{}... {}", &self.name[..name_len], platform)
+        } else {
+            format!("{} {}", &self.name, platform)
+        };
+
         for (elem, value) in [
-            ("name", &self.name),
+            ("name", pretty_name.as_str()),
             ("tag", &self.tag),
             ("members", &self.members.to_string()),
         ] {
@@ -202,6 +228,7 @@ pub struct ClanPlayerInfo {
     online_name: String,
     allow_msg: u8,
     members: u32,
+    platform: Platform
 }
 
 #[allow(clippy::cast_possible_truncation)]
@@ -226,6 +253,7 @@ impl From<(Clan, Jid)> for ClanPlayerInfo {
             online_name: player.username.clone(),
             allow_msg,
             members: clan.members.iter().filter(|p| p.status == Status::Member).count() as u32,
+            platform: clan.platform
         }
     }
 }
@@ -241,8 +269,19 @@ impl ToXML for ClanPlayerInfo {
         let element = XmlEvent::start_element("info").attr("id", &clan_id);
         writer.write(element).ok();
 
+        // Check if the platform fits in the name, along with a space
+        let platform = self.platform.to_string();
+        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+            // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
+            // Format: `<name>[...] <platform>`
+            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
+            format!("{}... {}", &self.name[..name_len], platform)
+        } else {
+            format!("{} {}", &self.name, platform)
+        };
+
         for (elem, value) in [
-            ("name", &self.name),
+            ("name", pretty_name.as_str()),
             ("tag", &self.tag),
             ("role", &self.role.to_string()),
             ("status", &self.status.to_string()),

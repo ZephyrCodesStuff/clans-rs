@@ -3,6 +3,8 @@
 //! 
 //! They are what's stored into the database.
 
+use std::fmt::Display;
+
 use actix_web::web::Data;
 use chrono::{DateTime, Utc};
 use mongodb::bson::doc;
@@ -15,6 +17,9 @@ use super::{announcement::Announcement, player::{Jid, Player, Role, Status}};
 
 /// Maximum number of clans that can exist in the game.
 const MAX_CLAN_COUNT: u32 = 1_000_000;
+
+/// Maximum length of a clan's name.
+pub const MAX_NAME_LENGTH: usize = 64;
 
 /// A clan ID.
 /// 
@@ -29,6 +34,15 @@ pub enum Platform {
     Console,
     /// The RPCS3 emulator.
     Emulator
+}
+
+impl Display for Platform {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Console => write!(f, "[PS3]"),
+            Self::Emulator => write!(f, "[PC]"),
+        }
+    }
 }
 
 impl Default for Platform {
