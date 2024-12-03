@@ -9,7 +9,7 @@ use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
-    entities::{clan::Clan, player::{Jid, Player, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, JoinClan, KickMember, LeaveClan, UpdateMemberInfo}}, responses::{
+    entities::{clan::{Clan, Platform}, player::{Jid, Player, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, JoinClan, KickMember, LeaveClan, UpdateMemberInfo}}, responses::{
         base::{Content, List, Response},
         entities::{PlayerBasicInfo, PlayerInfo}, error::ErrorCode,
     }
@@ -193,7 +193,8 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
 ///     - Have the ``auto_accept`` attribute set to ``true``.
 #[post("/clan_manager_update/sec/join_clan")]
 pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Response<()> {
-    let author = Jid::from(req.request.ticket);
+    let author = Jid::from(req.request.ticket.clone());
+    let platform = Platform::from(req.request.ticket);
 
     let mut clan = match Clan::resolve(req.request.id, &database).await {
         Ok(clan) => clan,
@@ -208,6 +209,11 @@ pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Resp
     // Check if the clan accepts new members
     if !clan.auto_accept {
         return Response::error(ErrorCode::PermissionDenied);
+    }
+
+    // Check if the clan was created for the player's platform
+    if clan.platform != platform {
+        return Response::error(ErrorCode::InvalidEnvironment);
     }
 
     // Add the player

@@ -9,7 +9,7 @@ use mongodb::bson::doc;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::Database, structs::responses::error::ErrorCode};
+use crate::{database::Database, structs::{responses::error::ErrorCode, ticket::{Signature, Ticket}}};
 
 use super::{announcement::Announcement, player::{Jid, Player, Role, Status}};
 
@@ -21,6 +21,31 @@ const MAX_CLAN_COUNT: u32 = 1_000_000;
 /// Should be limited to [`MAX_CLAN_COUNT`], as the game
 /// rejects any ID that surpasses it.
 pub type Id = u32;
+
+/// A platform the game can be played on.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Platform {
+    /// The ``PlayStation`` 3 console.
+    Console,
+    /// The RPCS3 emulator.
+    Emulator
+}
+
+impl Default for Platform {
+    fn default() -> Self {
+        Self::Console
+    }
+}
+
+/// Derive a platform from a ticket.
+impl From<Ticket> for Platform {
+    fn from(ticket: Ticket) -> Self {
+        match ticket.signature {
+            Signature::Console(_) => Self::Console,
+            Signature::Emulator(_) => Self::Emulator,
+        }
+    }
+}
 
 /// Represents a clan in the game.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,6 +105,12 @@ pub struct Clan {
 
     /// Unknown use.
     pub size: u32,
+
+    /// The platform the clan was created for.
+    /// 
+    /// Members of the opposite platform should NOT be allowed to join it,
+    /// as the game will crash trying to fetch the clan leader.
+    pub platform: Platform,
 }
 
 impl Default for Clan {
@@ -101,6 +132,7 @@ impl Default for Clan {
             int_attr2: 0,
             int_attr3: 0,
             size: 0,
+            platform: Platform::default(),
         }
     }
 }

@@ -3,7 +3,7 @@
 use actix_web::{post, web::Data};
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::{clan::Clan, player::{Jid, Player, Role, Status}}, requests::{base::Request, invites::{AcceptInvitation, AcceptMembershipRequest, CancelInvitation, CancelRequestMembership, DeclineInvitation, DeclineMembershipRequest, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
+use crate::{database::Database, structs::{entities::{clan::{Clan, Platform}, player::{Jid, Player, Role, Status}}, requests::{base::Request, invites::{AcceptInvitation, AcceptMembershipRequest, CancelInvitation, CancelRequestMembership, DeclineInvitation, DeclineMembershipRequest, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
 
 /// Invite a player to a clan.
 /// 
@@ -97,7 +97,8 @@ pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvi
 ///     - Not be a member of the clan
 #[post("/clan_manager_update/sec/accept_invitation")]
 pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvitation>) -> Response<()> {
-    let jid = Jid::from(req.request.ticket);
+    let jid = Jid::from(req.request.ticket.clone());
+    let platform = Platform::from(req.request.ticket);
 
     let mut clan = match Clan::resolve(req.request.id, &database).await {
         Ok(clan) => clan,
@@ -112,6 +113,11 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
     // Check if the user has been invited
     if !clan.status_of(&jid).map_or(false, |status| status == &Status::Invited) {
         return Response::error(ErrorCode::MemberStatusInvalid);
+    }
+
+    // Check if the clan was created for the same platform as the player
+    if clan.platform != platform {
+        return Response::error(ErrorCode::InvalidEnvironment);
     }
 
     // Accept the invitation
@@ -160,7 +166,8 @@ pub async fn decline_invitation(database: Data<Database>, req: Request<DeclineIn
 ///     - Not be blacklisted
 #[post("/clan_manager_update/sec/request_membership")]
 pub async fn request_membership(database: Data<Database>, req: Request<RequestMembership>) -> Response<()> {
-    let jid = Jid::from(req.request.ticket);
+    let jid = Jid::from(req.request.ticket.clone());
+    let platform = Platform::from(req.request.ticket);
 
     let mut clan = match Clan::resolve(req.request.id, &database).await {
         Ok(clan) => clan,
@@ -175,6 +182,11 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     // Check if the user has been blacklisted
     if clan.is_blacklisted(&jid) {
         return Response::error(ErrorCode::Blacklisted);
+    }
+
+    // Check if the clan was created for the same platform as the player
+    if clan.platform != platform {
+        return Response::error(ErrorCode::InvalidEnvironment);
     }
 
     // Determine the player's role and status based on the clan's auto-accept setting
@@ -233,7 +245,7 @@ pub async fn cancel_request_membership(database: Data<Database>, req: Request<Ca
 ///     - Not be blacklisted
 #[post("/clan_manager_update/sec/accept_membership_request")]
 pub async fn accept_membership_request(database: Data<Database>, req: Request<AcceptMembershipRequest>) -> Response<()> {
-    let jid = Jid::from(req.request.ticket);
+    let jid = Jid::from(req.request.ticket.clone());
 
     let mut clan = match Clan::resolve(req.request.id, &database).await {
         Ok(clan) => clan,

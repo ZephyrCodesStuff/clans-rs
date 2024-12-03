@@ -194,7 +194,7 @@ impl Ticket {
             Version::V2 | Version::V2_1 | Version::V3 => {
                 ticket.account_id = Self::decode_u64(&bytes[0x48..0x54]);
                 ticket.username = Self::decode_string(&bytes[0x54..0x74]);
-                ticket.region = Self::decode_string(&bytes[0x66..0x68]);
+                ticket.region = Self::decode_string(&bytes[0x78..0x7A]);
                 ticket.domain = Self::decode_string(&bytes[0x80..0x82]);
                 ticket.service_id = Self::decode_string(&bytes[0x88..0x9B]);
 
@@ -218,7 +218,7 @@ impl Ticket {
                 ticket.account_id = Self::decode_u64(&bytes[0x4C..0x58]);
                 ticket.username = Self::decode_string(&bytes[0x58..0x78]);
                 ticket.region = Self::decode_string(&bytes[0x7C..0x7E]);
-                ticket.domain = Self::decode_string(&bytes[0x84..0x88]);
+                ticket.domain = Self::decode_string(&bytes[0x84..0x86]);
                 ticket.service_id = Self::decode_string(&bytes[0x8C..0x9F]);
 
                 let signature_id: &[u8; 4] = &bytes[0xC0..0xC4].try_into().unwrap();

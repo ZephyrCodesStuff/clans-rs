@@ -3,7 +3,7 @@
 use serde::{Deserialize, Deserializer};
 
 use crate::structs::{
-    entities::{clan::{Clan, Id}, player::{Jid, Player, Role, Status}},
+    entities::{clan::{Clan, Id, Platform}, player::{Jid, Player, Role, Status}},
     ticket::Ticket,
 };
 
@@ -26,6 +26,7 @@ impl From<CreateClan> for Clan {
 
         clan.name = request.name;
         clan.tag = request.tag;
+        clan.platform = Platform::from(request.ticket.clone());
 
         clan.members = vec![
             Player {
