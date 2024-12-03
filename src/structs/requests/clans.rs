@@ -1,6 +1,6 @@
 //! Request structs for clan related requests.
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 
 use crate::structs::{
     entities::{clan::{Clan, Id}, player::{Jid, Player, Role, Status}},
@@ -61,6 +61,95 @@ pub struct ClanSearch {
 
     /// How many clans to return.
     pub max: i32,
+
+    /// A custom filter to apply to the search.
+    pub filter: Option<ClanSearchFilter>,
+}
+
+/// Enum of operators to apply to a clan search filter.
+#[derive(Debug)]
+pub enum ClanSearchFilterOperator {
+    /// Everything.
+    All,
+
+    /// Name equal to.
+    Equal,
+
+    /// Name different from.
+    NotEqual,
+
+    /// Name starts with.
+    GreaterThan,
+
+    /// Name starts with, or equal to.
+    GreaterThanOrEqual,
+
+    /// Name ends with.
+    LessThan,
+
+    /// Name ends with, or equal to.
+    LessThanOrEqual,
+
+    /// Name contains.
+    Like,
+}
+
+impl Default for ClanSearchFilterOperator {
+    fn default() -> Self {
+        Self::All
+    }
+}
+
+impl TryFrom<&str> for ClanSearchFilterOperator {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "eq" => Ok(Self::Equal),
+            "ne" => Ok(Self::NotEqual),
+            "gt" => Ok(Self::GreaterThan),
+            "ge" => Ok(Self::GreaterThanOrEqual),
+            "lt" => Ok(Self::LessThan),
+            "le" => Ok(Self::LessThanOrEqual),
+            "lk" => Ok(Self::Like),
+            _ => Err(()),
+        }
+    }
+}
+
+/// A custom filter to apply to a clan search.
+#[derive(Debug, Default, Deserialize)]
+pub struct ClanSearchFilter {
+    /// The name of the filter.
+    pub name: ClanSearchFilterName,
+}
+
+/// The inner filter's properties.
+#[derive(Debug, Default, Deserialize)]
+pub struct ClanSearchFilterName {
+    /// The operator to apply.
+    #[serde(rename = "op")]
+    pub operator: ClanSearchFilterOperator,
+
+    /// The value of the operator.
+    #[serde(rename = "value")]
+    pub value: String,
+}
+
+impl<'de> Deserialize<'de> for ClanSearchFilterOperator {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Get as string to parse the filter.
+        let op = String::deserialize(deserializer)?;
+
+        // Try to parse the operator.
+        let operator = Self::try_from(op.as_str())
+            .map_err(|()| serde::de::Error::custom("Invalid operator"))?;
+
+        Ok(operator)
+    }
 }
 
 /// Request to get info about a clan.

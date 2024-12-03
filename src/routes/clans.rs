@@ -6,7 +6,7 @@
 //! - Editing a clan
 //! - ...
 
-use actix_web::{post, web::{Bytes, Data}};
+use actix_web::{post, web::Data};
 use futures_util::StreamExt;
 use mongodb::bson::doc;
 
@@ -16,7 +16,7 @@ use crate::{
         entities::{
             clan::Clan,
             player::{Jid, Status},
-        }, requests::{base::Request, clans::{ClanSearch, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
+        }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
             entities::{ClanInfo, ClanPlayerInfo, ClanSearchInfo, IdEntity}, error::ErrorCode,
         }
@@ -79,12 +79,7 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
 /// Search for a clan.
 #[post("/clan_manager_view/func/clan_search")]
 #[allow(clippy::cast_possible_truncation)]
-pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>, bytes: Bytes) -> Response<ClanSearchInfo> {
-    log::warn!("TODO: Implement clan_search");
-    log::debug!("{}", String::from_utf8_lossy(&bytes));
-    
-    // TODO: Implement the actual search logic
-
+pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>) -> Response<ClanSearchInfo> {
     // Find all the clans
     let Ok(mut clans) = database.clans.find(doc! {}).await
     else { return Response::error(ErrorCode::InternalServerError) };
@@ -92,7 +87,32 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>, byt
     // Collect all valid entries
     let mut data: Vec<Clan> = vec![];
     while let Some (clan) = clans.next().await {
-        if let Ok(clan) = clan {
+        if clan.is_err() { continue; }
+        let clan = clan.unwrap();
+
+        // Check if the clan matches the search criteria
+        if req.request.filter.is_none() {
+            data.push(clan);
+            continue;
+        }
+
+        let mut clan_name = clan.name.to_lowercase();
+        clan_name = clan_name.trim().to_string();
+
+        let mut filter_value = req.request.filter.as_ref().unwrap().name.value.to_lowercase();
+        filter_value = filter_value.trim().to_string();
+
+        let filter = req.request.filter.as_ref().unwrap();
+        let predicate = match filter.name.operator {
+            ClanSearchFilterOperator::All => true,
+            ClanSearchFilterOperator::Equal => clan_name == filter_value,
+            ClanSearchFilterOperator::NotEqual => clan_name != filter_value,
+            ClanSearchFilterOperator::GreaterThan | ClanSearchFilterOperator::GreaterThanOrEqual => clan_name.starts_with(&filter_value),
+            ClanSearchFilterOperator::LessThan | ClanSearchFilterOperator::LessThanOrEqual => clan_name.ends_with(&filter_value),
+            ClanSearchFilterOperator::Like => clan_name.contains(&filter_value),
+        };
+
+        if predicate {
             data.push(clan);
         }
     }

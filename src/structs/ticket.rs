@@ -56,12 +56,13 @@ impl Version {
     /// Length of the signature.
     pub fn signature_length(self, signature: &Signature) -> usize {
         match signature {
+            // PS3 uses SHA-1, and supposedly SHA-256 for V4.
             Signature::Console(_) => match self {
                 Self::V2 | Self::V2_1 | Self::V3 => 16,
                 Self::V4 => 32,
             },
 
-            // It varies.
+            // The emulator uses SHA-224 for V2 and V3 (without implementing V4), meaning the signature is 28 bytes long.
             Signature::Emulator(_) => unimplemented!(),
         }
     }
@@ -265,16 +266,11 @@ impl Ticket {
             }
         };
 
-        println!("Bytes: {bytes:X?}");
-
         let data = ticket.signature.data();
         let signature = match ticket.signature {
             Signature::Console(_) => &bytes[bytes.len() - version.signature_length(&ticket.signature)..],
             Signature::Emulator(_) => &bytes[0xC0..],
         };
-
-        println!(" Data: {data:X?}");
-        println!(" Sign: {signature:X?}");
 
         let mut verifier = Verifier::new(digest, &keypair)
             .map_err(|_| "Failed to create verifier")?;
