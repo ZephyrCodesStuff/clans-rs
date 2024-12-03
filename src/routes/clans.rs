@@ -100,6 +100,7 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>) -> 
         clan_name = clan_name.trim().to_string();
 
         let mut filter_value = req.request.filter.as_ref().unwrap().name.value.to_lowercase();
+        filter_value = filter_value.trim_end_matches(&clan.platform.to_string().to_lowercase()).to_string();
         filter_value = filter_value.trim().to_string();
 
         let filter = req.request.filter.as_ref().unwrap();
