@@ -186,7 +186,7 @@ impl Ticket {
         let version = Version::from_u16(version)
             .ok_or("Unsupported version")?;
 
-        if bytes.len() < 212 || bytes.len() > 320 {
+        if bytes.len() < 212 || bytes.len() > 400 {
             return Err("Invalid buffer length");
         }
 
