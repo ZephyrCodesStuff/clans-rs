@@ -155,7 +155,6 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
         return Response::error(ErrorCode::ClanLeaderLimitReached);
     }
 
-
     // Save the clan to the database.
     if let Err(e) = clan.save(&database).await { return Response::error(e); }
 

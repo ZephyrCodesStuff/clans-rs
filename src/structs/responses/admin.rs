@@ -3,7 +3,7 @@
 use actix_web::{body::BoxBody, HttpResponse, Responder};
 use serde::Serialize;
 
-use super::error::{ErrorCode, SUCCESS};
+use super::error::ErrorCode;
 
 /// Base response structure for the Admin API.
 #[derive(Debug, Serialize)]
@@ -31,14 +31,7 @@ impl From<ErrorCode> for Response {
 
 impl From<Response> for HttpResponse {
     fn from(response: Response) -> Self {
-        let status = if response.status_code == SUCCESS {
-            actix_web::http::StatusCode::OK
-        } else {
-            actix_web::http::StatusCode::BAD_REQUEST
-        };
-
-        Self::build(status)
-            .json(response)
+        Self::Ok().json(response)
     }
 }
 
