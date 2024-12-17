@@ -18,8 +18,14 @@ use super::{announcement::Announcement, player::{Jid, Player, Role, Status}};
 /// Maximum number of clans that can exist in the game.
 const MAX_CLAN_COUNT: u32 = 1_000_000;
 
+/// Maximum number of clans a member can be in, at the same time.
+pub const MAX_CLAN_MEMBERSHIP: usize = 5;
+
 /// Maximum length of a clan's name.
 pub const MAX_NAME_LENGTH: usize = 64;
+
+/// Maximum number of clans someone can own, at the same time.
+pub const MAX_CLAN_OWNERSHIP: usize = 2;
 
 /// A clan ID.
 /// 
@@ -34,6 +40,18 @@ pub enum Platform {
     Console,
     /// The RPCS3 emulator.
     Emulator
+}
+
+#[allow(clippy::match_same_arms)]
+impl From<String> for Platform {
+    fn from(platform: String) -> Self {
+        match platform.to_lowercase().as_str() {
+            "emulator" | "rpcs3" | "rpcn" | "pc" => Self::Emulator,
+            "console" | "psn" | "ps3" => Self::Console,
+
+            _ => Self::Console
+        }
+    }
 }
 
 impl Display for Platform {

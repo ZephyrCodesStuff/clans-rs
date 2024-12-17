@@ -1,9 +1,10 @@
 //! TODO: document this
 
 use actix_web::{post, web::Data};
+use futures_util::StreamExt;
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::{clan::{Clan, Platform}, player::{Jid, Player, Role, Status}}, requests::{base::Request, invites::{AcceptInvitation, AcceptMembershipRequest, CancelInvitation, CancelRequestMembership, DeclineInvitation, DeclineMembershipRequest, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
+use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP}, player::{Jid, Player, Role, Status}}, requests::{base::Request, invites::{AcceptInvitation, AcceptMembershipRequest, CancelInvitation, CancelRequestMembership, DeclineInvitation, DeclineMembershipRequest, RequestMembership, SendInvitation}}, responses::{base::{Content, Response}, error::ErrorCode}}};
 
 /// Invite a player to a clan.
 /// 
@@ -120,6 +121,19 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
         return Response::error(ErrorCode::InvalidEnvironment);
     }
 
+    // Check if the player is in too many clans
+    let clans = match database.clans.find(doc! { "$and": [{ "members.jid": jid.to_string() }, { "members.status": Status::Member.to_string() }] })
+        .await.map_err(|_| ErrorCode::InternalServerError)
+    {
+        Ok(clans) => clans,
+        Err(e) => return Response::error(e),
+    };
+
+    // If the player is in 5 or more clans, return an error
+    if clans.count().await >= MAX_CLAN_MEMBERSHIP {
+        return Response::error(ErrorCode::ClanJoinedLimitReached);
+    }
+
     // Accept the invitation
     let player = clan.members.iter_mut().find(|p| p.jid == jid).unwrap();
     player.status = Status::Member;
@@ -187,6 +201,19 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     // Check if the clan was created for the same platform as the player
     if clan.platform != platform {
         return Response::error(ErrorCode::InvalidEnvironment);
+    }
+
+    // Check if the player is in too many clans
+    let clans = match database.clans.find(doc! { "$and": [{ "members.jid": jid.to_string() }, { "members.status": Status::Member.to_string() }] })
+        .await.map_err(|_| ErrorCode::InternalServerError)
+    {
+        Ok(clans) => clans,
+        Err(e) => return Response::error(e),
+    };
+
+    // If the player is in 5 or more clans, return an error
+    if clans.count().await >= MAX_CLAN_MEMBERSHIP {
+        return Response::error(ErrorCode::ClanJoinedLimitReached);
     }
 
     // Determine the player's role and status based on the clan's auto-accept setting

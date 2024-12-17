@@ -14,8 +14,8 @@ use crate::{
     database::Database,
     structs::{
         entities::{
-            clan::Clan,
-            player::{Jid, Status},
+            clan::{Clan, MAX_CLAN_OWNERSHIP},
+            player::{Jid, Role, Status},
         }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
             entities::{ClanInfo, ClanPlayerInfo, ClanSearchInfo, IdEntity}, error::ErrorCode,
@@ -141,7 +141,20 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>) -> 
 /// Create a clan.
 #[post("/clan_manager_update/sec/create_clan")]
 pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> Response<IdEntity> {
+    let author = Jid::from(req.request.ticket.clone());
     let clan = Clan::from(req.request);
+
+    // Find all the clans where the author is a leader
+    let Ok(clans) = database.clans.find(
+        doc! { "members.jid": author.to_string(), "members.role": Role::Leader.to_string() }
+    ).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    // Check if the author already owns too many clans
+    if clans.count().await >= MAX_CLAN_OWNERSHIP {
+        return Response::error(ErrorCode::ClanLeaderLimitReached);
+    }
+
 
     // Save the clan to the database.
     if let Err(e) = clan.save(&database).await { return Response::error(e); }

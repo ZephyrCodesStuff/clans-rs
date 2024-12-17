@@ -42,9 +42,15 @@ pub enum ErrorCode {
     /// The user is blacklisted from the clan.
     Blacklisted = 0x11,
 
-    /// The specified environment is invalid.
+    /// The specified Home environment is invalid.
     /// 
-    /// This error's use is unknown.
+    /// The existing Home environments are:
+    /// - ``"prod"``
+    /// - ``"qa"``
+    /// - ``"dev"``
+    /// - ``"cqa"``
+    /// 
+    /// Accessing an environment not listed here will trigger this error.
     InvalidEnvironment = 0x1D,
 
     /// The clan service does not exist.

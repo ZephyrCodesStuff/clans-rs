@@ -12,7 +12,7 @@ mod structs;
 mod routes;
 mod utils;
 
-use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{middleware::{self, Logger}, web::Data, App, HttpServer};
 use database::Database;
 use structs::responses::{base::Response, error::ErrorCode};
 
@@ -85,6 +85,10 @@ async fn main() -> std::io::Result<()> {
             .default_service(actix_web::web::to(|| async {
                 Response::<()>::error(ErrorCode::NoSuchClanService)
             }))
+
+            // Admin service: authenticated
+            .wrap(middleware::from_fn(utils::auth::admin))
+            .service(routes::admin::create_clan)
 
             .wrap(Logger::default())
             .app_data(Data::new(database.clone()))

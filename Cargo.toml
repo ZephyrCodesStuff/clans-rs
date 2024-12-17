@@ -7,7 +7,7 @@ authors = ["ZephyrCodesStuff <zeph@zephs.me>"]
 keywords = ["clans", "sony", "playstation", "ps3", "api"]
 categories = ["api", "web"]
 
-version = "1.0.0"
+version = "1.1.0"
 repository = "https://github.com/ZephyrCodesStuff/clans-rs"
 
 license = "GPL-3.0"
@@ -16,7 +16,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.4.0"
+actix-web = "4.9.0"
 base64 = "0.22.1"
 chrono = { version = "0.4.38", features = ["serde"] }
 dotenv = "0.15.0"

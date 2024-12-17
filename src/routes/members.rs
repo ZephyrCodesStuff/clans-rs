@@ -6,10 +6,11 @@
 //! - ...
 
 use actix_web::{post, web::Data};
+use futures_util::StreamExt;
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
-    entities::{clan::{Clan, Platform}, player::{Jid, Player, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, JoinClan, KickMember, LeaveClan, UpdateMemberInfo}}, responses::{
+    entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP}, player::{Jid, Player, Role, Status}}, requests::{base::Request, members::{ChangeMemberRole, GetMemberInfo, GetMemberList, JoinClan, KickMember, LeaveClan, UpdateMemberInfo}}, responses::{
         base::{Content, List, Response},
         entities::{PlayerBasicInfo, PlayerInfo}, error::ErrorCode,
     }
@@ -193,7 +194,7 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
 ///     - Have the ``auto_accept`` attribute set to ``true``.
 #[post("/clan_manager_update/sec/join_clan")]
 pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Response<()> {
-    let author = Jid::from(req.request.ticket.clone());
+    let jid = Jid::from(req.request.ticket.clone());
     let platform = Platform::from(req.request.ticket);
 
     let mut clan = match Clan::resolve(req.request.id, &database).await {
@@ -202,7 +203,7 @@ pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Resp
     };
 
     // Check if the player is already in a clan
-    if clan.members.iter().any(|p| p.jid == author) {
+    if clan.members.iter().any(|p| p.jid == jid) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -216,9 +217,22 @@ pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Resp
         return Response::error(ErrorCode::InvalidEnvironment);
     }
 
+    // Check if the player is in too many clans
+    let clans = match database.clans.find(doc! { "$and": [{ "members.jid": jid.to_string() }, { "members.status": Status::Member.to_string() }] })
+        .await.map_err(|_| ErrorCode::InternalServerError)
+    {
+        Ok(clans) => clans,
+        Err(e) => return Response::error(e),
+    };
+
+    // If the player is in 5 or more clans, return an error
+    if clans.count().await >= MAX_CLAN_MEMBERSHIP {
+        return Response::error(ErrorCode::ClanJoinedLimitReached);
+    }
+
     // Add the player
     clan.members.push(Player {
-        jid: author,
+        jid,
         role: Role::Member,
         ..Default::default()
     });

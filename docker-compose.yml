@@ -10,6 +10,7 @@ services:
       - PORT=8080
       - RUST_LOG=${LOG_LEVEL:-info}
       - MONGO_URI=mongodb://clans-mongo:27017/clans
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
     ports:
       - "42073:8080"
     networks:
