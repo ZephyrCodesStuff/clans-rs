@@ -34,7 +34,7 @@ pub const MAX_CLAN_OWNERSHIP: usize = 2;
 pub type Id = u32;
 
 /// A platform the game can be played on.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub enum Platform {
     /// The ``PlayStation`` 3 console.
     Console,
@@ -51,6 +51,16 @@ impl From<String> for Platform {
 
             _ => Self::Console
         }
+    }
+}
+
+impl<'a> Deserialize<'a> for Platform {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'a>
+    {
+        let platform = String::deserialize(deserializer)?;
+        Ok(Self::from(platform))
     }
 }
 
