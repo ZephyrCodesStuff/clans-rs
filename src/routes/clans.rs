@@ -14,7 +14,7 @@ use crate::{
     database::Database,
     structs::{
         entities::{
-            clan::{Clan, MAX_CLAN_OWNERSHIP},
+            clan::{Clan, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH},
             player::{ExtendedJid, Jid, Role, Status},
         }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
@@ -160,6 +160,22 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>) -> 
 pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> Response<IdEntity> {
     let author = Jid::from(req.request.ticket.clone());
     let clan = Clan::from(req.request);
+
+    // Make sure the name doesn't contain fancy characters (PS3 hates them)
+    // This only allows alphanumeric characters, whitespaces, and ASCII punctuation (e.g. !, @, #, $, %, etc.)
+    if clan.name.chars().any(|c| !c.is_alphanumeric() && !c.is_whitespace() && !c.is_ascii_punctuation()) {
+        return Response::error(ErrorCode::PermissionDenied);
+    }
+
+    // Clan tag should be even stricter: only alphanumeric characters and whitespaces
+    if clan.tag.chars().any(|c| !c.is_alphanumeric() && !c.is_whitespace()) {
+        return Response::error(ErrorCode::PermissionDenied);
+    }
+
+    // Make sure the name or tag aren't too long
+    if clan.name.len() > MAX_CLAN_NAME_LENGTH || clan.tag.len() > MAX_CLAN_TAG_LENGTH {
+        return Response::error(ErrorCode::PermissionDenied);
+    }
 
     // Find all the clans where the author is a leader
     let Ok(clans) = database.clans.find(

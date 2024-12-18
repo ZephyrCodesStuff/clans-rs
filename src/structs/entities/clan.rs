@@ -22,7 +22,10 @@ const MAX_CLAN_COUNT: u32 = 1_000_000;
 pub const MAX_CLAN_MEMBERSHIP: usize = 5;
 
 /// Maximum length of a clan's name.
-pub const MAX_NAME_LENGTH: usize = 64;
+pub const MAX_CLAN_NAME_LENGTH: usize = 64;
+
+/// Maximum length of a clan's tag.
+pub const MAX_CLAN_TAG_LENGTH: usize = 10;
 
 /// Maximum number of clans someone can own, at the same time.
 pub const MAX_CLAN_OWNERSHIP: usize = 2;

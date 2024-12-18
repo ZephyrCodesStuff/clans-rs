@@ -14,7 +14,7 @@ use xml::{writer::XmlEvent, EmitterConfig};
 use crate::{
     structs::entities::{
         announcement::{Announcement, Id as AnnouncementId},
-        clan::{Clan, Id as ClanId, Platform, MAX_NAME_LENGTH},
+        clan::{Clan, Id as ClanId, Platform, MAX_CLAN_NAME_LENGTH},
         player::{Jid, Player, Role, Status},
     },
     utils::{self, xml_format::ToXML},
@@ -89,10 +89,10 @@ impl ToXML for ClanInfo {
 
         // Check if the platform fits in the name, along with a space
         let platform = self.platform.to_string();
-        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_CLAN_NAME_LENGTH {
             // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
             // Format: `<name>[...] <platform>`
-            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
+            let name_len = MAX_CLAN_NAME_LENGTH - platform.len() - 1 - 3;
             format!("{}... {}", &self.name[..name_len], platform)
         } else {
             format!("{} {}", &self.name, platform)
@@ -174,10 +174,10 @@ impl ToXML for ClanSearchInfo {
 
         // Check if the platform fits in the name, along with a space
         let platform = self.platform.to_string();
-        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_CLAN_NAME_LENGTH {
             // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
             // Format: `<name>[...] <platform>`
-            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
+            let name_len = MAX_CLAN_NAME_LENGTH - platform.len() - 1 - 3;
             format!("{}... {}", &self.name[..name_len], platform)
         } else {
             format!("{} {}", &self.name, platform)
@@ -273,10 +273,10 @@ impl ToXML for ClanPlayerInfo {
         let platform = self.platform.to_string();
         let mut pretty_name = format!("{} {}", &self.name, platform);
 
-        if pretty_name.len() > MAX_NAME_LENGTH {
+        if pretty_name.len() > MAX_CLAN_NAME_LENGTH {
             // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
             // Format: `<name>[...] <platform>`
-            let mut name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3; // Removing the space, the platform tag, and the 3 dots
+            let mut name_len = MAX_CLAN_NAME_LENGTH - platform.len() - 1 - 3; // Removing the space, the platform tag, and the 3 dots
             let mut new_name = self.name.clone();
             
             // We can't split the name in the middle of a character
