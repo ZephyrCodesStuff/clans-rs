@@ -52,7 +52,12 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     else { return Response::error(ErrorCode::InternalServerError) };
 
     // Store the player's Jid in the database, if it doesn't exist
-    if player.is_none() { database.players.insert_one(jid.clone()).await.ok(); }
+    if player.is_none() {
+        match database.players.insert_one(jid.clone()).await {
+            Ok(_) => log::info!("Inserted player `{}` into the database", jid),
+            Err(e) => log::error!("Failed to log player `{}` into the database: {}", jid, e),
+        }
+    }
 
     // Find all the clans
     let Ok(mut clans) = database.clans.find(doc! {}).await
