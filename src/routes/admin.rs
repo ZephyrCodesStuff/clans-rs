@@ -9,23 +9,33 @@ use actix_web::{put, web::{Data, Json}};
 use futures_util::StreamExt;
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::{clan::{Clan, MAX_CLAN_OWNERSHIP}, player::{Jid, Role}}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
-
-/// The region of the player who creates a clan with the Admin endpoint.
-/// 
-/// We set this to `un` because that's RPCS3's default, and also generic enough.
-pub const FORGED_JID_DOMAIN: &str = "un";
-
-/// The domain of the player who creates a clan with the Admin endpoint.
-/// 
-/// We set this to `br` because that's RPCS3's default.
-pub const FORGED_JID_REGION: &str = "br";
+use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_OWNERSHIP}, player::Role}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
 
 /// Create a clan.
 #[put("/admin/clan/create")]
 pub async fn create_clan(database: Data<Database>, data: Json<CreateClan>) -> Response {
-    let author = Jid::from(data.clone());
-    let clan = Clan::from(data.into_inner());
+    // Look-up the player in the database
+    let filter = match data.clan_platform {
+        Platform::Console => doc! {
+            "username": data.username.clone(),
+        },
+        Platform::Emulator => doc! {
+            "username": data.username.clone(),
+            "domain": "un",
+            "region": "br",
+        }
+    };
+
+    let Ok(author) = database.players.find_one(filter).await
+    else { return Response::from(ErrorCode::InternalServerError) };
+
+    // If the player was not found, return an error
+    if author.is_none() {
+        return Response::from(ErrorCode::InvalidNpId);
+    }
+    
+    let author = author.unwrap();
+    let clan = Clan::from((data.into_inner(), author.clone()));
 
     // Find all the clans where the author is a leader
     let Ok(mut clans) = database.clans.find(doc! {}).await

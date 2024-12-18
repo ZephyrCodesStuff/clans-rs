@@ -20,11 +20,9 @@ pub struct CreateClan {
     pub clan_platform: Platform,
 }
 
-impl From<CreateClan> for Clan {
-    fn from(request: CreateClan) -> Self {
+impl From<(CreateClan, Jid)> for Clan {
+    fn from((request, author): (CreateClan, Jid)) -> Self {
         let mut clan = Self::default();
-
-        let jid = Jid::from(request.clone());
 
         clan.name = request.clan_name;
         clan.tag = request.clan_tag;
@@ -32,7 +30,7 @@ impl From<CreateClan> for Clan {
 
         clan.members = vec![
             Player {
-                jid,
+                jid: author,
                 role: Role::Leader,
                 status: Status::Member,
                 ..Default::default()

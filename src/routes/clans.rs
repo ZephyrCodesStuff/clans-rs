@@ -43,6 +43,17 @@ pub async fn get_clan_info(database: Data<Database>, req: Request<GetClanInfo>) 
 pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) -> Response<ClanPlayerInfo> {
     let jid = Jid::from(req.request.ticket);
 
+    // EXTRA: log the player's Jid in the `Players` collection, for future lookups
+    let Ok(player) = database.players.find_one(doc! {
+        "username": jid.username.clone(),
+        "region": jid.region.clone(),
+        "domain": jid.domain.clone(),
+    }).await 
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    // Store the player's Jid in the database, if it doesn't exist
+    if player.is_none() { database.players.insert_one(jid.clone()).await.ok(); }
+
     // Find all the clans
     let Ok(mut clans) = database.clans.find(doc! {}).await
     else { return Response::error(ErrorCode::InternalServerError) };

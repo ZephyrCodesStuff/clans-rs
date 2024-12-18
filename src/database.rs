@@ -5,17 +5,25 @@
 
 use mongodb::{bson::doc, options::IndexOptions, IndexModel};
 
-use crate::structs::entities::clan::Clan;
+use crate::structs::entities::{clan::Clan, player::Jid};
 
 /// Database utility struct.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
+#[allow(clippy::struct_field_names)]
 pub struct Database {
     /// ``MongoDB`` database connection.
     database: mongodb::Database,
 
     /// Collection of clans.
     pub clans: mongodb::Collection<Clan>,
+
+    /// Collections of players and their regions.
+    /// 
+    /// This is necessary because we need to be able to find them,
+    /// when creating clans outside of the game. Else the game will
+    /// ignore the clan we've made.
+    pub players: mongodb::Collection<Jid>,
 }
 
 impl Database {
@@ -45,9 +53,12 @@ impl Database {
 
         clans.create_index(index).await.unwrap();
 
+        let players = database.collection("players");
+
         Self {
             database,
             clans,
+            players,
         }
     }
 }
