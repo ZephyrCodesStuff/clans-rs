@@ -15,7 +15,7 @@ use crate::{
     structs::{
         entities::{
             clan::{Clan, MAX_CLAN_OWNERSHIP},
-            player::{Jid, Role, Status},
+            player::{ExtendedJid, Jid, Role, Status},
         }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
             entities::{ClanInfo, ClanPlayerInfo, ClanSearchInfo, IdEntity}, error::ErrorCode,
@@ -42,18 +42,19 @@ pub async fn get_clan_info(database: Data<Database>, req: Request<GetClanInfo>) 
 #[allow(clippy::cast_possible_truncation)]
 pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) -> Response<ClanPlayerInfo> {
     let jid = Jid::from(req.request.ticket);
-
+    
     // EXTRA: log the player's Jid in the `Players` collection, for future lookups
+    let jid_ext = ExtendedJid::from(jid.clone());
     let Ok(player) = database.players.find_one(doc! {
-        "username": jid.username.clone(),
-        "region": jid.region.clone(),
-        "domain": jid.domain.clone(),
+        "username": jid_ext.username.clone(),
+        "domain": jid_ext.domain.clone(),
+        "region": jid_ext.region.clone(),
     }).await 
     else { return Response::error(ErrorCode::InternalServerError) };
 
     // Store the player's Jid in the database, if it doesn't exist
     if player.is_none() {
-        match database.players.insert_one(jid.clone()).await {
+        match database.players.insert_one(jid_ext).await {
             Ok(_) => log::info!("Inserted player `{}` into the database", jid),
             Err(e) => log::error!("Failed to log player `{}` into the database: {}", jid, e),
         }

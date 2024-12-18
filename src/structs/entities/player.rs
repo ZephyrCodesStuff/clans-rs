@@ -32,6 +32,16 @@ impl PartialEq for Jid {
     }
 }
 
+impl From<ExtendedJid> for Jid {
+    fn from(jid: ExtendedJid) -> Self {
+        Self {
+            username: jid.username,
+            domain: jid.domain,
+            region: jid.region,
+        }
+    }
+}
+
 impl TryFrom<String> for Jid {
     type Error = &'static str;
 
@@ -89,6 +99,30 @@ impl From<Ticket> for Jid {
             username: ticket.username,
             region: ticket.region,
             domain: ticket.domain,
+        }
+    }
+}
+
+/// Convenience struct for storing a player's JID,
+/// without serializing it to a string.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtendedJid {
+    /// The player's username.
+    pub username: String,
+
+    /// The region's ``PlayStation Network`` domain.
+    pub domain: String,
+
+    /// The player's account region.
+    pub region: String,
+}
+
+impl From<Jid> for ExtendedJid {
+    fn from(jid: Jid) -> Self {
+        Self {
+            username: jid.username,
+            domain: jid.domain,
+            region: jid.region,
         }
     }
 }

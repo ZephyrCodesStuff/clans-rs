@@ -51,7 +51,7 @@ pub async fn create_clan(database: Data<Database>, data: Json<CreateClan>) -> Re
     // Since we don't have the full JID, we have to search manually.
     let owned = clans_vec.iter().filter(|clan| {
         clan.members.iter().any(|member| {
-            member.jid == author && member.role == Role::Leader
+            member.jid == author.clone().into() && member.role == Role::Leader
         })
     });
 

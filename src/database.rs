@@ -5,7 +5,7 @@
 
 use mongodb::{bson::doc, options::IndexOptions, IndexModel};
 
-use crate::structs::entities::{clan::Clan, player::Jid};
+use crate::structs::entities::{clan::Clan, player::ExtendedJid};
 
 /// Database utility struct.
 #[derive(Debug, Clone)]
@@ -23,7 +23,7 @@ pub struct Database {
     /// This is necessary because we need to be able to find them,
     /// when creating clans outside of the game. Else the game will
     /// ignore the clan we've made.
-    pub players: mongodb::Collection<Jid>,
+    pub players: mongodb::Collection<ExtendedJid>,
 }
 
 impl Database {

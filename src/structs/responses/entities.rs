@@ -271,15 +271,18 @@ impl ToXML for ClanPlayerInfo {
 
         // Check if the platform fits in the name, along with a space
         let platform = self.platform.to_string();
-        let pretty_name = if self.name.len() + 1 + platform.len()  > MAX_NAME_LENGTH {
+        let mut pretty_name = format!("{} {}", &self.name, platform);
+
+        if pretty_name.len() > MAX_NAME_LENGTH {
             // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
             // Format: `<name>[...] <platform>`
-            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3;
-            format!("{}... {}", &self.name[..name_len], platform)
-        } else {
-            format!("{} {}", &self.name, platform)
-        };
+            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3; // Removing the space, the platform tag, and the 3 dots
+            let mut new_name = self.name.clone();
+            let _ = new_name.split_off(name_len);
 
+            pretty_name = format!("{new_name}... {platform}");
+        }
+            
         for (elem, value) in [
             ("name", pretty_name.as_str()),
             ("tag", &self.tag),
