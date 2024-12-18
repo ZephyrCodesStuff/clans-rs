@@ -18,6 +18,8 @@ pub async fn create_clan(database: Data<Database>, data: Json<CreateClan>) -> Re
     let filter = match data.clan_platform {
         Platform::Console => doc! {
             "username": data.username.clone(),
+            "domain": {"$ne": "un"},
+            "region": {"$ne": "br"},
         },
         Platform::Emulator => doc! {
             "username": data.username.clone(),
