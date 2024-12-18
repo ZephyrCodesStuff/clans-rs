@@ -276,10 +276,16 @@ impl ToXML for ClanPlayerInfo {
         if pretty_name.len() > MAX_NAME_LENGTH {
             // Remove the last ``platform.len() + 1`` characters from the name, and set the previous 3 characters to "..."
             // Format: `<name>[...] <platform>`
-            let name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3; // Removing the space, the platform tag, and the 3 dots
+            let mut name_len = MAX_NAME_LENGTH - platform.len() - 1 - 3; // Removing the space, the platform tag, and the 3 dots
             let mut new_name = self.name.clone();
-            let _ = new_name.split_off(name_len);
+            
+            // We can't split the name in the middle of a character
+            // so we have to find the last character boundary
+            while !new_name.is_char_boundary(name_len) {
+                name_len -= 1;
+            }
 
+            new_name.truncate(name_len);
             pretty_name = format!("{new_name}... {platform}");
         }
             
