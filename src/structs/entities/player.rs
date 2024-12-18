@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::structs::ticket::Ticket;
+use crate::{routes::admin::{FORGED_JID_DOMAIN, FORGED_JID_REGION}, structs::{requests::admin::CreateClan, ticket::Ticket}};
 
 /// A JID is an identifier composed of:
 /// 
@@ -55,6 +55,16 @@ impl TryFrom<String> for Jid {
         let region = parts.next().unwrap_or_default().to_string();
 
         Ok(Self { username, domain, region })
+    }
+}
+
+impl From<CreateClan> for Jid {
+    fn from(request: CreateClan) -> Self {
+        Self {
+            username: request.username,
+            domain: FORGED_JID_DOMAIN.to_string(),
+            region: FORGED_JID_REGION.to_string(),
+        }
     }
 }
 
