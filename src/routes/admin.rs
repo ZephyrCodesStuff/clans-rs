@@ -13,13 +13,13 @@ use crate::{database::Database, structs::{entities::{clan::{Clan, MAX_CLAN_OWNER
 
 /// The region of the player who creates a clan with the Admin endpoint.
 /// 
-/// We set this to `dc` for ``Discord``.
-pub const FORGED_JID_DOMAIN: &str = "dc";
+/// We set this to `un` because that's RPCS3's default, and also generic enough.
+pub const FORGED_JID_DOMAIN: &str = "un";
 
 /// The domain of the player who creates a clan with the Admin endpoint.
 /// 
-/// We set this to `dh` for ``Destination Home``.
-pub const FORGED_JID_REGION: &str = "dh";
+/// We set this to `br` because that's RPCS3's default.
+pub const FORGED_JID_REGION: &str = "br";
 
 /// Create a clan.
 #[put("/admin/clan/create")]
