@@ -9,6 +9,7 @@
 use actix_web::{post, web::Data};
 use futures_util::StreamExt;
 use mongodb::bson::doc;
+use regex::Regex;
 
 use crate::{
     database::Database,
@@ -22,6 +23,14 @@ use crate::{
         }
     },
 };
+
+/// Regular expression for clan names.
+/// 
+/// These have to be pretty limited because the PS3 doesn't like fancy characters.
+const CLAN_NAME_REGEX: &str = r"^[a-zA-Z0-9\s!$%&'()*+,-./:;<=>?@\[\\\]^_`{|}~]*$";
+
+/// Regular expression for clan tags.
+const CLAN_TAG_REGEX: &str = r"^[a-zA-Z0-9\s]*$";
 
 /// View basic information about a clan.
 #[post("/clan_manager_view/func/get_clan_info")]
@@ -177,12 +186,10 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
 
     // Make sure the name doesn't contain fancy characters (PS3 hates them)
     // This only allows alphanumeric characters, whitespaces, and ASCII punctuation (e.g. !, @, #, $, %, etc.)
-    if clan.name.chars().any(|c| !c.is_alphanumeric() && !c.is_whitespace() && !c.is_ascii_punctuation()) {
-        return Response::error(ErrorCode::PermissionDenied);
-    }
+    let name_regex = Regex::new(CLAN_NAME_REGEX).unwrap();
+    let tag_regex = Regex::new(CLAN_TAG_REGEX).unwrap();
 
-    // Clan tag should be even stricter: only alphanumeric characters and whitespaces
-    if clan.tag.chars().any(|c| !c.is_alphanumeric() && !c.is_whitespace()) {
+    if !name_regex.is_match(&clan.name) || !tag_regex.is_match(&clan.tag) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 

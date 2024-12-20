@@ -450,6 +450,7 @@ dependencies = [
  "openssl",
  "pretty_env_logger",
  "rand",
+ "regex",
  "serde",
  "serde-xml-rs",
  "xml-rs",

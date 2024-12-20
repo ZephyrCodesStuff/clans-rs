@@ -1,6 +1,8 @@
 //! Base XML structs for the responses of the API,
 //! wrapping the XML entities inside.
 
+use std::fmt::Debug;
+
 use actix_web::Responder;
 use xml::{writer::XmlEvent, EmitterConfig};
 
@@ -51,7 +53,7 @@ impl<T: ToXML> ToXML for Response<T> {
 	}
 }
 
-impl<T: ToXML> Responder for Response<T> {
+impl<T: ToXML + Debug> Responder for Response<T> {
     type Body = actix_web::body::BoxBody;
 
     fn respond_to(self, _: &actix_web::HttpRequest) -> actix_web::HttpResponse<Self::Body> {
@@ -59,6 +61,9 @@ impl<T: ToXML> Responder for Response<T> {
 		for (key, value) in &HEADERS {
 			builder.append_header((*key, *value));
 		}
+
+		// DEBUG: print the XML's contents
+		log::debug!("Response: {:#?}", self);
 
 		builder.body::<String>(self.to_xml())
     }
