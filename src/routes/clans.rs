@@ -9,13 +9,12 @@
 use actix_web::{post, web::Data};
 use futures_util::StreamExt;
 use mongodb::bson::doc;
-use regex::Regex;
 
 use crate::{
     database::Database,
     structs::{
         entities::{
-            clan::{Clan, Platform, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH},
+            clan::{Clan, Platform, MAX_CLAN_DESCRIPTION_LENGTH, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH},
             player::{ExtendedJid, Jid, Role, Status},
         }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
@@ -23,14 +22,6 @@ use crate::{
         }
     },
 };
-
-/// Regular expression for clan names.
-/// 
-/// These have to be pretty limited because the PS3 doesn't like fancy characters.
-const CLAN_NAME_REGEX: &str = r"^[a-zA-Z0-9\s!$%&'()*+,-./:;<=>?@\[\\\]^_`{|}~]*$";
-
-/// Regular expression for clan tags.
-const CLAN_TAG_REGEX: &str = r"^[a-zA-Z0-9\s]*$";
 
 /// View basic information about a clan.
 #[post("/clan_manager_view/func/get_clan_info")]
@@ -182,30 +173,25 @@ pub async fn clan_search(database: Data<Database>, req: Request<ClanSearch>) -> 
 #[post("/clan_manager_update/sec/create_clan")]
 pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> Response<IdEntity> {
     let author = Jid::from(req.request.ticket.clone());
-    let clan = Clan::from(req.request);
+    let mut clan = Clan::from(req.request);
 
-    // Make sure the name doesn't contain fancy characters (PS3 hates them)
-    // This only allows alphanumeric characters, whitespaces, and ASCII punctuation (e.g. !, @, #, $, %, etc.)
-    let name_regex = Regex::new(CLAN_NAME_REGEX).unwrap();
-    let tag_regex = Regex::new(CLAN_TAG_REGEX).unwrap();
+    // Limit the clan name and tag to their maximum lengths
+    clan.name = clan.name.chars().take(MAX_CLAN_NAME_LENGTH).collect();
+    clan.tag = clan.tag.chars().take(MAX_CLAN_TAG_LENGTH).collect();
 
-    if !name_regex.is_match(&clan.name) || !tag_regex.is_match(&clan.tag) {
-        return Response::error(ErrorCode::PermissionDenied);
-    }
-
-    // Make sure the name or tag aren't too long
-    if clan.name.len() > MAX_CLAN_NAME_LENGTH || clan.tag.len() > MAX_CLAN_TAG_LENGTH {
-        return Response::error(ErrorCode::PermissionDenied);
-    }
-
-    // Find all the clans where the author is a leader
-    let Ok(clans) = database.clans.find(
-        doc! { "members.jid": author.to_string(), "members.role": Role::Leader.to_string() }
-    ).await
+    // Check if the author is already in too many clans
+    let Ok(clans_member) = database.clans.find(doc! { "members.jid": author.to_string() }).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
+    if clans_member.count().await >= MAX_CLAN_MEMBERSHIP {
+        return Response::error(ErrorCode::ClanJoinedLimitReached);
+    }
+
     // Check if the author already owns too many clans
-    if clans.count().await >= MAX_CLAN_OWNERSHIP {
+    let Ok(clans_owned) = database.clans.find(doc! { "members.jid": author.to_string(), "members.role": Role::Leader.to_string() }).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    if clans_owned.count().await >= MAX_CLAN_OWNERSHIP {
         return Response::error(ErrorCode::ClanLeaderLimitReached);
     }
 
@@ -258,8 +244,8 @@ pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanI
         return Response::error(ErrorCode::PermissionDenied);
     }
 
-    // Update the clan's info
-    clan.description = req.request.description;
+    // Update the clan's info, making sure to limit the description's length
+    clan.description = req.request.description.chars().take(MAX_CLAN_DESCRIPTION_LENGTH).collect();
 
     // Save the updated clan to the database
     if let Err(e) = clan.save(&database).await { return Response::error(e); }

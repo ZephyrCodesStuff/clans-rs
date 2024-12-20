@@ -25,7 +25,10 @@ pub const MAX_CLAN_MEMBERSHIP: usize = 5;
 pub const MAX_CLAN_NAME_LENGTH: usize = 64;
 
 /// Maximum length of a clan's tag.
-pub const MAX_CLAN_TAG_LENGTH: usize = 10;
+pub const MAX_CLAN_TAG_LENGTH: usize = 8;
+
+/// Maximum length of a clan's description.
+pub const MAX_CLAN_DESCRIPTION_LENGTH: usize = 255;
 
 /// Maximum number of clans someone can own, at the same time.
 pub const MAX_CLAN_OWNERSHIP: usize = 2;
