@@ -45,12 +45,17 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     
     // EXTRA: log the player's Jid in the `Players` collection, for future lookups
     let jid_ext = ExtendedJid::from(jid.clone());
-    let Ok(player) = database.players.find_one(doc! {
+    let player = match database.players.find_one(doc! {
         "username": jid_ext.username.clone(),
         "domain": jid_ext.domain.clone(),
         "region": jid_ext.region.clone(),
-    }).await 
-    else { return Response::error(ErrorCode::InternalServerError) };
+    }).await {
+        Ok(player) => player,
+        Err(e) => {
+            log::error!("Failed to look-up player `{}` in the database: {}", jid, e);
+            return Response::error(ErrorCode::InternalServerError);
+        }
+    };
 
     // Store the player's Jid in the database, if it doesn't exist
     if player.is_none() {
