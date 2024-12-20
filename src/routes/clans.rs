@@ -14,7 +14,7 @@ use crate::{
     database::Database,
     structs::{
         entities::{
-            clan::{Clan, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH},
+            clan::{Clan, Platform, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH},
             player::{ExtendedJid, Jid, Role, Status},
         }, requests::{base::Request, clans::{ClanSearch, ClanSearchFilterOperator, CreateClan, DisbandClan, GetClanInfo, GetClanList, UpdateClanInfo}}, responses::{
             base::{Content, List, Response},
@@ -41,7 +41,7 @@ pub async fn get_clan_info(database: Data<Database>, req: Request<GetClanInfo>) 
 #[post("/clan_manager_view/sec/get_clan_list")]
 #[allow(clippy::cast_possible_truncation)]
 pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) -> Response<ClanPlayerInfo> {
-    let jid = Jid::from(req.request.ticket);
+    let jid = Jid::from(req.request.ticket.clone());
     
     // EXTRA: log the player's Jid in the `Players` collection, for future lookups
     let jid_ext = ExtendedJid::from(jid.clone());
@@ -81,12 +81,21 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
     let data_len = data.len();
 
     // Format them from the perspective of the player
-    let items: Vec<ClanPlayerInfo> = data
+    let mut items: Vec<ClanPlayerInfo> = data
         .into_iter()
         .skip((req.request.start - 1).max(0) as usize)
         .take(req.request.max as usize)
         .map(|clan| ClanPlayerInfo::from((clan, jid.clone())))
         .collect();
+
+    // Make sure the game doesn't know they're a member of another clan on a different platform
+    let platform = Platform::from(req.request.ticket);
+    for c in &mut items {
+        if c.status == Status::Member as u32 && c.platform != platform {
+            c.role = Role::NonMember as u32;
+            c.status = Status::Unknown as u32;
+        }
+    }
 
     let list = List {
         results: items.len() as u32,

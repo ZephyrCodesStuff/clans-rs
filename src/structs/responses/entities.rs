@@ -223,12 +223,12 @@ pub struct ClanPlayerInfo {
     id: ClanId,
     name: String,
     tag: String,
-    role: u32,
-    status: u32,
+    pub(crate) role: u32,
+    pub(crate) status: u32,
     online_name: String,
     allow_msg: u8,
     members: u32,
-    platform: Platform
+    pub(crate) platform: Platform
 }
 
 #[allow(clippy::cast_possible_truncation)]
