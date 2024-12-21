@@ -65,8 +65,10 @@ pub async fn get_clan_list(database: Data<Database>, req: Request<GetClanList>) 
         }
     }
 
-    // Find all the clans
-    let Ok(mut clans) = database.clans.find(doc! {}).await
+    // Find all the clans where the user is relevant
+    let Ok(mut clans) = database.clans.find(doc! {
+        "members.jid": jid.to_string(),
+    }).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
     // Collect all valid entries
