@@ -184,26 +184,25 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
         return Response::error(ErrorCode::PermissionDenied);
     }
 
-    // Check if the author is already in too many clans
-    let Ok(clans_member) = database.clans.find(doc! {
-        "members.jid": author.to_string(),
-        "members.status": Status::Member.to_string()
-    }).await
+    // Check the clans the author is in
+    let Ok(cursor) = database.clans.find(doc! { "members.jid": author.to_string() }).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
-    if clans_member.count().await >= MAX_CLAN_MEMBERSHIP {
+    let clans: Vec<Clan> = cursor
+        .filter_map(|clan| async move { clan.ok() })
+        .collect()
+        .await;
+
+    let clans_owned_len = clans.iter().filter(|c| c.owner().map_or(false, |o| o.jid == author)).count();
+    let clans_member_len = clans.iter().filter(|c| c.status_of(&author).map_or(false, |s| s == &Status::Member)).count();
+
+    // Check if the author is already in too many clans
+    if clans_member_len >= MAX_CLAN_MEMBERSHIP {
         return Response::error(ErrorCode::ClanJoinedLimitReached);
     }
 
     // Check if the author already owns too many clans
-    let Ok(clans_owned) = database.clans.find(doc! {
-        "members.jid": author.to_string(),
-        "members.status": Status::Member.to_string(),
-        "members.role": Role::Leader.to_string()
-    }).await
-    else { return Response::error(ErrorCode::InternalServerError) };
-
-    if clans_owned.count().await >= MAX_CLAN_OWNERSHIP {
+    if clans_owned_len >= MAX_CLAN_OWNERSHIP {
         return Response::error(ErrorCode::ClanLeaderLimitReached);
     }
 

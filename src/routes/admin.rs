@@ -9,7 +9,7 @@ use actix_web::{put, web::{Data, Json}};
 use futures_util::StreamExt;
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH}, player::{Jid, Role, Status}}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
+use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH}, player::{Jid, Status}}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
 
 /// Create a clan.
 #[put("/admin/clan/create")]
@@ -48,26 +48,25 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
     let author: Jid = author.unwrap().into();
     let clan = Clan::from((data.into_inner(), author.clone()));
 
-    // Check if the author is already in too many clans
-    let Ok(clans_member) = database.clans.find(doc! {
-        "members.jid": author.to_string(),
-        "members.status": Status::Member.to_string()
-    }).await
+    // Check the clans the author is in
+    let Ok(cursor) = database.clans.find(doc! { "members.jid": author.to_string() }).await
     else { return Response::from(ErrorCode::InternalServerError) };
 
-    if clans_member.count().await >= MAX_CLAN_MEMBERSHIP {
+    let clans: Vec<Clan> = cursor
+        .filter_map(|clan| async move { clan.ok() })
+        .collect()
+        .await;
+
+    let clans_owned_len = clans.iter().filter(|c| c.owner().map_or(false, |o| o.jid == author)).count();
+    let clans_member_len = clans.iter().filter(|c| c.status_of(&author).map_or(false, |s| s == &Status::Member)).count();
+
+    // Check if the author is already in too many clans
+    if clans_member_len >= MAX_CLAN_MEMBERSHIP {
         return Response::from(ErrorCode::ClanJoinedLimitReached);
     }
 
     // Check if the author already owns too many clans
-    let Ok(clans_owned) = database.clans.find(doc! {
-        "members.jid": author.to_string(),
-        "members.status": Status::Member.to_string(),
-        "members.role": Role::Leader.to_string()
-    }).await
-    else { return Response::from(ErrorCode::InternalServerError) };
-
-    if clans_owned.count().await >= MAX_CLAN_OWNERSHIP {
+    if clans_owned_len >= MAX_CLAN_OWNERSHIP {
         return Response::from(ErrorCode::ClanLeaderLimitReached);
     }
 
