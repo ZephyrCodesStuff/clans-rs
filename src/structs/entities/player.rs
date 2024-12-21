@@ -165,11 +165,11 @@ impl From<u32> for Role {
 impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unknown => write!(f, "0"),
-            Self::NonMember => write!(f, "1"),
-            Self::Member => write!(f, "2"),
-            Self::SubLeader => write!(f, "3"),
-            Self::Leader => write!(f, "4"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::NonMember => write!(f, "NonMember"),
+            Self::Member => write!(f, "Member"),
+            Self::SubLeader => write!(f, "SubLeader"),
+            Self::Leader => write!(f, "Leader"),
         }
     }
 }
@@ -198,10 +198,10 @@ pub enum Status {
 impl Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unknown => write!(f, "0"),
-            Self::Member => write!(f, "1"),
-            Self::Invited => write!(f, "2"),
-            Self::Pending => write!(f, "3"),
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Member => write!(f, "Member"),
+            Self::Invited => write!(f, "Invited"),
+            Self::Pending => write!(f, "Pending"),
         }
     }
 }
