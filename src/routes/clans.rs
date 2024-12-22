@@ -187,13 +187,8 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
     }
 
     // Check the clans the author is in
-    let Ok(cursor) = database.clans.find(doc! { "members.jid": author.to_string() }).await
+    let Ok(clans) = author.clans(database.clone()).await
     else { return Response::error(ErrorCode::InternalServerError) };
-
-    let clans: Vec<Clan> = cursor
-        .filter_map(|clan| async move { clan.ok() })
-        .collect()
-        .await;
 
     let clans_owned_len = clans.iter().filter(|c| c.owner().map_or(false, |o| o.jid == author)).count();
     let clans_member_len = clans.iter().filter(|c| c.status_of(&author).map_or(false, |s| s == &Status::Member)).count();

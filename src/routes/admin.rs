@@ -6,7 +6,6 @@
 //! revival project's Discord bot.
 
 use actix_web::{put, web::{Data, Json}};
-use futures_util::StreamExt;
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH}, player::{Jid, Status}}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
@@ -49,13 +48,8 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
     let clan = Clan::from((data.into_inner(), author.clone()));
 
     // Check the clans the author is in
-    let Ok(cursor) = database.clans.find(doc! { "members.jid": author.to_string() }).await
+    let Ok(clans) = author.clans(database.clone()).await
     else { return Response::from(ErrorCode::InternalServerError) };
-
-    let clans: Vec<Clan> = cursor
-        .filter_map(|clan| async move { clan.ok() })
-        .collect()
-        .await;
 
     let clans_owned_len = clans.iter().filter(|c| c.owner().map_or(false, |o| o.jid == author)).count();
     let clans_member_len = clans.iter().filter(|c| c.status_of(&author).map_or(false, |s| s == &Status::Member)).count();

@@ -2,9 +2,14 @@
 
 use std::fmt::Display;
 
+use actix_web::web::Data;
+use futures_util::StreamExt;
+use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
-use crate::structs::ticket::Ticket;
+use crate::{database::Database, structs::{responses::error::ErrorCode, ticket::Ticket}};
+
+use super::clan::Clan;
 
 /// A JID is an identifier composed of:
 /// 
@@ -24,6 +29,27 @@ pub struct Jid {
 
     /// The player's account region.
     pub region: String,
+}
+
+impl Jid {
+    /// Utility method to find every clan the player is in.
+    pub async fn clans(&self, database: Data<Database>) -> Result<Vec<Clan>, ErrorCode> {
+        let cursor = match database.clans.find(doc! {
+            "members.jid": self.to_string()
+        })
+            .await.map_err(|_| ErrorCode::InternalServerError)
+        {
+            Ok(clans) => clans,
+            Err(e) => return Err(e),
+        };
+    
+        let clans: Vec<Clan> = cursor
+            .filter_map(|clan| async move { clan.ok() })
+            .collect()
+            .await;
+
+        Ok(clans)
+    }
 }
 
 impl PartialEq for Jid {

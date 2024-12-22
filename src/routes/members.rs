@@ -6,7 +6,6 @@
 //! - ...
 
 use actix_web::{post, web::Data};
-use futures_util::StreamExt;
 use mongodb::bson::doc;
 
 use crate::{database::Database, structs::{
@@ -218,15 +217,13 @@ pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Resp
     }
 
     // Check if the player is in too many clans
-    let clans = match database.clans.find(doc! { "$and": [{ "members.jid": jid.to_string() }, { "members.status": Status::Member.to_string() }] })
-        .await.map_err(|_| ErrorCode::InternalServerError)
-    {
-        Ok(clans) => clans,
-        Err(e) => return Response::error(e),
-    };
+    let Ok(clans) = jid.clans(database.clone()).await
+    else { return Response::error(ErrorCode::InternalServerError) };
+
+    let clans_member = clans.iter().filter(|c| c.status_of(&jid).map_or(false, |s| s == &Status::Member));
 
     // If the player is in 5 or more clans, return an error
-    if clans.count().await >= MAX_CLAN_MEMBERSHIP {
+    if clans_member.count() >= MAX_CLAN_MEMBERSHIP {
         return Response::error(ErrorCode::ClanJoinedLimitReached);
     }
 
