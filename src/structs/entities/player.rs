@@ -87,8 +87,17 @@ impl TryFrom<String> for Jid {
             return Err("Invalid JID format.");
         }
 
-        let domain = parts.next().unwrap_or_default().to_string();
-        let region = parts.next().unwrap_or_default().to_string();
+        // Default to RPCN defaults: `un` and `br`
+        let mut domain = parts.next().unwrap_or("un").to_string();
+        let mut region = parts.next().unwrap_or("br").to_string();
+        
+        if domain.is_empty() {
+            domain = "un".to_string();
+        }
+
+        if region.is_empty() {
+            region = "br".to_string();
+        }
 
         Ok(Self { username, domain, region })
     }

@@ -7,7 +7,7 @@
 use std::fs;
 
 use base64::Engine;
-use openssl::{ec::EcKey, hash::MessageDigest, pkey::PKey, sign::Verifier};
+use openssl::{ec::EcKey, hash::MessageDigest, pkey::PKey, sign::{self, Verifier}};
 use serde::{Deserialize, Deserializer};
 
 /// The version of the ticket format.
@@ -197,6 +197,15 @@ impl Ticket {
                 ticket.region = Self::decode_string(&bytes[0x78..0x7A]);
                 ticket.domain = Self::decode_string(&bytes[0x80..0x82]);
                 ticket.service_id = Self::decode_string(&bytes[0x88..0x9B]);
+
+                // If empty, default to RPCN defaults: `un` and `br`
+                if ticket.domain.is_empty() {
+                    ticket.domain = "un".to_string();
+                }
+
+                if ticket.region.is_empty() {
+                    ticket.region = "br".to_string();
+                }
 
                 let signature_id: &[u8; 4] = &bytes[0xB8..0xBC].try_into().unwrap();
                 let mut data: Vec<u8> = Vec::new();
