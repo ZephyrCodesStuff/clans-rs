@@ -7,7 +7,7 @@
 use std::fs;
 
 use base64::Engine;
-use openssl::{ec::EcKey, hash::MessageDigest, pkey::PKey, sign::{self, Verifier}};
+use openssl::{ec::EcKey, hash::MessageDigest, pkey::PKey, sign::Verifier};
 use serde::{Deserialize, Deserializer};
 
 /// The version of the ticket format.
