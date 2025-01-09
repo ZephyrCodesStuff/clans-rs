@@ -24,6 +24,14 @@ However,
 - You **must** include the original license in any redistribution.
 - You **must** disclose the source code of any modified versions of this project.
 
+### 💢 A short note about the open-sourcing of this project
+Contrarily to what some people will try to tell you, **I was under no obligation to make this project open source**. This is an attempt to take away whatsoever credit for my efforts, which I find extremely insulting and disrespectful.
+
+Their claim can be basically reduced to:
+> Since RPCS3 is open source, then he was obligated to share his server too!
+
+Which is **bullshit**: this server doesn't include any code borrowed from RPCS3, therefore the open-source requirement of the GPL license does not apply here.
+
 ## Contributing
 
 Contributions are always welcome!
@@ -37,7 +45,7 @@ Below are all of the API endpoints that are available in the Sony Clans API.
 The ones that are marked with an "x" are the ones that have been implemented so far.
 
 - `.../func/...`: Normal endpoints
-- `.../sec/...`: Secure endpoints, contain a Ticket for authentication.
+- `.../sec/...`: Secure endpoints, contain an NP X-I-5 Ticket for authentication.
 
 ### Invites and requests
 
@@ -55,7 +63,7 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 
 ### Clans
 
-- [ ] `/clan_manager_view/func/clan_search`
+- [x] `/clan_manager_view/func/clan_search`
 - [x] `/clan_manager_view/func/get_clan_info`
 - [x] `/clan_manager_view/sec/get_clan_list`
 - [ ] `/clan_manager_view/func/get_clan_list_by_jid`
