@@ -2,7 +2,6 @@
 
 A Rust 🦀 implementation of the Sony Clans API for the PlayStation 3 system.
 
-
 ## Authors
 
 - [@zeph](https://www.github.com/ZephyrCodesStuff)
@@ -25,12 +24,14 @@ However,
 - You **must** disclose the source code of any modified versions of this project.
 
 ### 💢 A short note about the open-sourcing of this project
-Contrarily to what some people will try to tell you, **I was under no obligation to make this project open source**. This is an attempt to take away whatsoever credit for my efforts, which I find extremely insulting and disrespectful.
+Contrarily to what a certain group of people will try to tell you, **I was under no obligation to make this project open source**. This is an attempt to take away whatsoever credit for my efforts, which I find extremely insulting and disrespectful.
 
 Their claim can be basically reduced to:
 > Since RPCS3 is open source, then he was obligated to share his server too!
 
-Which is **bullshit**: this server doesn't include any code borrowed from RPCS3, therefore the open-source requirement of the GPL license does not apply here.
+Which is **completely false**: this server doesn't include any code borrowed from RPCS3, therefore the open-source requirement of the GPL license does not apply here.
+
+Frankly, it's sad I even have to mention this.
 
 ## Contributing
 
