@@ -45,7 +45,7 @@ pub async fn get_blacklist(database: Data<Database>, req: Request<GetBlacklist>)
 /// Add a player to a clan's blacklist.
 /// 
 /// - The author needs to:
-///     - Be a SubLeader or higher
+///     - Be a ``SubLeader`` or higher
 /// 
 /// - The player needs to:
 ///     - Not be a member of the clan
@@ -61,12 +61,12 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
     };
 
     // Check if the user is allowed to add to the blacklist
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&target).map_or(false, |status| status == &Status::Member) {
+    if clan.status_of(&target) == Some(&Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -84,7 +84,7 @@ pub async fn record_blacklist_entry(database: Data<Database>, req: Request<Recor
 /// Remove a player from a clan's blacklist.
 /// 
 /// - The author needs to:
-///     - Be a SubLeader or higher
+///     - Be a ``SubLeader`` or higher
 /// 
 /// - The player needs to:
 ///     - Not be a member of the clan
@@ -102,12 +102,12 @@ pub async fn delete_blacklist_entry(database: Data<Database>, req: Request<Delet
     };
 
     // Check if the user is allowed to remove from the blacklist
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&target).map_or(false, |status| status == &Status::Member) {
+    if clan.status_of(&target) == Some(&Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 

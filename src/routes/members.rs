@@ -56,7 +56,7 @@ pub async fn get_member_info(database: Data<Database>, req: Request<GetMemberInf
     };
 
     // Check if the user is allowed to view the player's info
-    if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {
+    if !(clan.status_of(&author) == Some(&Status::Member)) {
         return Response::error(ErrorCode::PermissionDenied);
     }
     
@@ -73,10 +73,10 @@ pub async fn get_member_info(database: Data<Database>, req: Request<GetMemberInf
 /// Kick a member from a clan.
 /// 
 /// The author needs to:
-///     - Be a SubLeader or higher
+///     - Be a `SubLeader` or higher
 /// 
 /// The player needs to:
-///     - Not be a SubLeader or higher
+///     - Not be a `SubLeader` or higher
 #[post("/clan_manager_update/sec/kick_member")]
 pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> Response<()> {
     let author = Jid::from(req.request.ticket);
@@ -89,17 +89,17 @@ pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> 
     };
 
     // Check if the user is allowed to kick the player
-    if !clan.role_of(&author).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&author).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&target).map_or(false, |status| status != &Status::Member) {
+    if clan.status_of(&target).is_some_and(|status| status != &Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
     // Check if the player is allowed to be kicked
-    if clan.role_of(&target).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&target).is_some_and(|role| role >= &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -115,7 +115,7 @@ pub async fn kick_member(database: Data<Database>, req: Request<KickMember>) -> 
 /// Change a player's role in a clan.
 ///
 /// The author needs to:
-///     - Be a SubLeader or higher
+///     - Be a `SubLeader` or higher
 /// 
 /// The player needs to:
 ///     - Be a member of the clan
@@ -131,12 +131,12 @@ pub async fn change_member_role(database: Data<Database>, req: Request<ChangeMem
     };
 
     // Check if the user is allowed to change the player's role
-    if !clan.role_of(&author).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&author).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is a member of the clan
-    if clan.status_of(&target).map_or(false, |status| status != &Status::Member) {
+    if clan.status_of(&target).is_some_and(|status| status != &Status::Member) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -166,7 +166,7 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
     };
 
     // Check if the user is allowed to update the player's info
-    if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {
+    if !(clan.status_of(&author) == Some(&Status::Member)) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -220,7 +220,7 @@ pub async fn join_clan(database: Data<Database>, req: Request<JoinClan>) -> Resp
     let Ok(clans) = jid.clans(database.clone()).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
-    let clans_member = clans.iter().filter(|c| c.status_of(&jid).map_or(false, |s| s == &Status::Member));
+    let clans_member = clans.iter().filter(|c| c.status_of(&jid) == Some(&Status::Member));
 
     // If the player is in 5 or more clans, return an error
     if clans_member.count() >= MAX_CLAN_MEMBERSHIP {
@@ -254,7 +254,7 @@ pub async fn leave_clan(database: Data<Database>, req: Request<LeaveClan>) -> Re
     };
 
     // Check if the player is a member of the clan
-    if !clan.status_of(&author).map_or(false, |status| status == &Status::Member) {
+    if !(clan.status_of(&author) == Some(&Status::Member)) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 

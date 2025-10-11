@@ -18,7 +18,7 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
     };
 
     // Check if the author has permissions to view the announcements
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Member) {
+    if !(clan.status_of(&jid) == Some(&Status::Member)) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -44,7 +44,7 @@ pub async fn retrieve_announcements(database: Data<Database>, req: Request<Retri
 /// Publish a new announcement for a clan.
 /// 
 /// The author needs to:
-///     - Be at least a SubLeader of the clan
+///     - Be at least a ``SubLeader`` of the clan
 #[post("/clan_manager_update/sec/post_announcement")]
 pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnouncement>) -> Response<IdEntity> {
     let jid = Jid::from(req.request.ticket.clone());
@@ -55,7 +55,7 @@ pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnoun
     };
 
     // Check if the author has permissions to post an announcement
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -74,7 +74,7 @@ pub async fn post_announcement(database: Data<Database>, req: Request<PostAnnoun
 /// Delete an announcement from a clan.
 /// 
 /// The author needs to:
-///     - Be at least a SubLeader of the clan
+///     - Be at least a ``SubLeader`` of the clan
 #[post("/clan_manager_update/sec/delete_announcement")]
 pub async fn delete_announcement(database: Data<Database>, req: Request<DeleteAnnouncement>) -> Response<()> {
     let jid = Jid::from(req.request.ticket.clone());
@@ -85,7 +85,7 @@ pub async fn delete_announcement(database: Data<Database>, req: Request<DeleteAn
     };
 
     // Check if the author has permissions to delete the announcement
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::SubLeader) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::SubLeader) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 

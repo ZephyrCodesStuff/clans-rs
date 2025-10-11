@@ -182,7 +182,7 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
     clan.tag = clan.tag.chars().take(MAX_CLAN_TAG_LENGTH).collect();
 
     // Make sure Unicode chars don't exceed the limits
-    if clan.name.as_bytes().len() > MAX_CLAN_NAME_LENGTH || clan.tag.as_bytes().len() > MAX_CLAN_TAG_LENGTH {
+    if clan.name.len() > MAX_CLAN_NAME_LENGTH || clan.tag.len() > MAX_CLAN_TAG_LENGTH {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -190,8 +190,8 @@ pub async fn create_clan(database: Data<Database>, req: Request<CreateClan>) -> 
     let Ok(clans) = author.clans(database.clone()).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
-    let clans_owned_len = clans.iter().filter(|c| c.owner().map_or(false, |o| o.jid == author)).count();
-    let clans_member_len = clans.iter().filter(|c| c.status_of(&author).map_or(false, |s| s == &Status::Member)).count();
+    let clans_owned_len = clans.iter().filter(|c| c.owner().is_some_and(|o| o.jid == author)).count();
+    let clans_member_len = clans.iter().filter(|c| c.status_of(&author) == Some(&Status::Member)).count();
 
     // Check if the author is already in too many clans
     if clans_member_len >= MAX_CLAN_MEMBERSHIP {
@@ -248,7 +248,7 @@ pub async fn update_clan_info(database: Data<Database>, req: Request<UpdateClanI
     };
 
     // Check if the user is allowed to update the clan's info
-    if !clan.status_of(&Jid::from(req.request.ticket)).map_or(false, |status| status == &Status::Member) {
+    if !(clan.status_of(&Jid::from(req.request.ticket)) == Some(&Status::Member)) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 

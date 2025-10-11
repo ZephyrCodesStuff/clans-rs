@@ -24,12 +24,12 @@ pub async fn send_invitation(database: Data<Database>, req: Request<SendInvitati
     };
 
     // Check if the author has permissions to invite the player
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::Member) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the player is already a member or has been invited
-    if clan.status_of(&req.request.jid).map_or(false, |status| status == &Status::Member || status == &Status::Invited) {
+    if clan.status_of(&req.request.jid).is_some_and(|status| status == &Status::Member || status == &Status::Invited) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -71,12 +71,12 @@ pub async fn cancel_invitation(database: Data<Database>, req: Request<CancelInvi
     };
 
     // Check if the author has permissions to cancel the invitation
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::Member) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the user has been invited
-    if clan.status_of(&req.request.jid).map_or(false, |status| status != &Status::Invited) {
+    if clan.status_of(&req.request.jid).is_some_and(|status| status != &Status::Invited) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -111,7 +111,7 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
     }
 
     // Check if the user has been invited
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Invited) {
+    if !(clan.status_of(&jid) == Some(&Status::Invited)) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -124,7 +124,7 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
     let Ok(clans) = jid.clans(database.clone()).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
-    let clans_member = clans.iter().filter(|clan| clan.status_of(&jid).map_or(false, |status| status == &Status::Member));
+    let clans_member = clans.iter().filter(|clan| clan.status_of(&jid) == Some(&Status::Member));
 
     // If the player is in 5 or more clans, return an error
     if clans_member.count() >= MAX_CLAN_MEMBERSHIP {
@@ -156,7 +156,7 @@ pub async fn decline_invitation(database: Data<Database>, req: Request<DeclineIn
     };
 
     // Check if the user has been invited
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Invited) {
+    if !(clan.status_of(&jid) == Some(&Status::Invited)) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -186,7 +186,7 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     };
 
     // Check if the user has already been invited or is already pending approval
-    if clan.status_of(&jid).map_or(false, |status| status == &Status::Member || status == &Status::Invited || status == &Status::Pending) {
+    if clan.status_of(&jid).is_some_and(|status| status == &Status::Member || status == &Status::Invited || status == &Status::Pending) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -204,7 +204,7 @@ pub async fn request_membership(database: Data<Database>, req: Request<RequestMe
     let Ok(clans) = jid.clans(database.clone()).await
     else { return Response::error(ErrorCode::InternalServerError) };
 
-    let clans_member = clans.iter().filter(|clan| clan.status_of(&jid).map_or(false, |status| status == &Status::Member));
+    let clans_member = clans.iter().filter(|clan| clan.status_of(&jid) == Some(&Status::Member));
 
     // If the player is in 5 or more clans, return an error
     if clans_member.count() >= MAX_CLAN_MEMBERSHIP {
@@ -244,7 +244,7 @@ pub async fn cancel_request_membership(database: Data<Database>, req: Request<Ca
     };
 
     // Check if the user has already been invited or is already pending approval
-    if !clan.status_of(&jid).map_or(false, |status| status == &Status::Pending) {
+    if !(clan.status_of(&jid) == Some(&Status::Pending)) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -275,7 +275,7 @@ pub async fn accept_membership_request(database: Data<Database>, req: Request<Ac
     };
 
     // Check if the author has permissions to accept the player
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::Member) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
@@ -285,7 +285,7 @@ pub async fn accept_membership_request(database: Data<Database>, req: Request<Ac
     }
 
     // Check if the user has requested to join
-    if !clan.status_of(&req.request.jid).map_or(false, |status| status == &Status::Pending) {
+    if !(clan.status_of(&req.request.jid) == Some(&Status::Pending)) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
@@ -311,12 +311,12 @@ pub async fn decline_membership_request(database: Data<Database>, req: Request<D
     };
 
     // Check if the author has permissions to decline the player
-    if !clan.role_of(&jid).map_or(false, |role| role >= &Role::Member) {
+    if clan.role_of(&jid).is_none_or(|role| role < &Role::Member) {
         return Response::error(ErrorCode::PermissionDenied);
     }
 
     // Check if the user has requested to join
-    if !clan.status_of(&req.request.jid).map_or(false, |status| status != &Status::Pending) {
+    if !clan.status_of(&req.request.jid).is_some_and(|status| status != &Status::Pending) {
         return Response::error(ErrorCode::MemberStatusInvalid);
     }
 
