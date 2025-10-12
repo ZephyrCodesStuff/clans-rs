@@ -6,10 +6,6 @@ A Rust 🦀 implementation of the Sony Clans API for the PlayStation 3 system.
 
 - [@zeph](https://www.github.com/ZephyrCodesStuff)
 
-## Used by
-
-This project is used by the [Destination Home](https://github.com/DestinationHome) team — a revival project for the PlayStation® 3 game "PlayStation Home".
-
 ## License
 This project is licensed under the GPL-3.0 license. See the [LICENSE](LICENSE) file for more information.
 
@@ -22,16 +18,6 @@ In short,
 However,
 - You **must** include the original license in any redistribution.
 - You **must** disclose the source code of any modified versions of this project.
-
-### 💢 A short note about the open-sourcing of this project
-Contrarily to what a certain group of people will try to tell you, **I was under no obligation to make this project open source**. This is an attempt to take away whatsoever credit for my efforts, which I find extremely insulting and disrespectful.
-
-Their claim can be basically reduced to:
-> Since RPCS3 is open source, then he was obligated to share his server too!
-
-Which is **completely false**: this server doesn't include any code borrowed from RPCS3, therefore the open-source requirement of the GPL license does not apply here.
-
-Frankly, it's sad I even have to mention this.
 
 ## Contributing
 
@@ -110,3 +96,4 @@ The ones that are marked with an "x" are the ones that have been implemented so 
 
 - [ ] `/clan_manager_view/sec/retrieve_posted_challenge_announcements`
 - [ ] `/clan_manager_update/sec/delete_posted_challenge_announcement`
+
