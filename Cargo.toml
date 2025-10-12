@@ -30,7 +30,7 @@ serde = { version = "1.0.215", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 xml-rs = "0.8.23"
 
-# Configure the linters to be as fucking annoying as possible
+# Configure the linters to be as annoying as possible
 [lints.clippy]
 cargo = "deny"
 all = "deny"
