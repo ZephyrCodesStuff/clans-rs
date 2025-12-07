@@ -7,7 +7,7 @@ A Rust 🦀 implementation of the Sony Clans API for the PlayStation 3 system.
 - [@zeph](https://www.github.com/ZephyrCodesStuff)
 
 ## License
-This project is licensed under the GPL-3.0 license. See the [LICENSE](LICENSE) file for more information.
+This project is licensed under the GNU AGPLv3 license. See the [LICENSE](LICENSE) file for more information.
 
 In short,
 - You are free to use this project for any purpose.
@@ -18,6 +18,7 @@ In short,
 However,
 - You **must** include the original license in any redistribution.
 - You **must** disclose the source code of any modified versions of this project.
+- If you run a *modified* version of this project as a network service, you **must** also offer the source code to users interacting with it over the network.
 
 ## Contributing
 

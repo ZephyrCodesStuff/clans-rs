@@ -1,14 +1,34 @@
 //! Routes handling special functions that are NOT meant
 //! to be accessed by the game client.
-//! 
+//!
 //! These endpoints are authenticated by the server, and
 //! are meant specifically for use by the Destination Home
 //! revival project's Discord bot.
 
-use actix_web::{put, web::{Data, Json}};
+use actix_web::{
+    put,
+    web::{Data, Json},
+};
 use mongodb::bson::doc;
 
-use crate::{database::Database, structs::{entities::{clan::{Clan, Platform, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP, MAX_CLAN_TAG_LENGTH}, player::{Jid, Status}}, requests::admin::CreateClan, responses::{admin::Response, error::{ErrorCode, SUCCESS}}}};
+use crate::{
+    database::Database,
+    structs::{
+        entities::{
+            clan::{
+                Clan, Platform, MAX_CLAN_MEMBERSHIP, MAX_CLAN_NAME_LENGTH, MAX_CLAN_OWNERSHIP,
+                MAX_CLAN_TAG_LENGTH,
+            },
+            player::{Jid, Status},
+        },
+        requests::admin::CreateClan,
+        responses::{
+            admin::Response,
+            error::{ErrorCode, SUCCESS},
+        },
+        ticket::{DEFAULT_DOMAIN, DEFAULT_REGION},
+    },
+};
 
 /// Create a clan.
 #[put("/admin/clan/create")]
@@ -17,14 +37,14 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
     let filter = match data.clan_platform {
         Platform::Console => doc! {
             "username": data.username.clone(),
-            "domain": {"$ne": "un"},
-            "region": {"$ne": "br"},
+            "domain": {"$ne": DEFAULT_DOMAIN},
+            "region": {"$ne": DEFAULT_REGION},
         },
         Platform::Emulator => doc! {
             "username": data.username.clone(),
-            "domain": "un",
-            "region": "br",
-        }
+            "domain": DEFAULT_DOMAIN,
+            "region": DEFAULT_REGION,
+        },
     };
 
     // Limit the clan name and tag to their maximum lengths
@@ -36,23 +56,31 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
         return Response::from(ErrorCode::PermissionDenied);
     }
 
-    let Ok(author) = database.players.find_one(filter).await
-    else { return Response::from(ErrorCode::InternalServerError) };
+    let Ok(author) = database.players.find_one(filter).await else {
+        return Response::from(ErrorCode::InternalServerError);
+    };
 
     // If the player was not found, return an error
     if author.is_none() {
         return Response::from(ErrorCode::InvalidNpId);
     }
-    
+
     let author: Jid = author.unwrap().into();
     let clan = Clan::from((data.into_inner(), author.clone()));
 
     // Check the clans the author is in
-    let Ok(clans) = author.clans(database.clone()).await
-    else { return Response::from(ErrorCode::InternalServerError) };
+    let Ok(clans) = author.clans(database.clone()).await else {
+        return Response::from(ErrorCode::InternalServerError);
+    };
 
-    let clans_owned_len = clans.iter().filter(|c| c.owner().is_some_and(|o| o.jid == author)).count();
-    let clans_member_len = clans.iter().filter(|c| c.status_of(&author) == Some(&Status::Member)).count();
+    let clans_owned_len = clans
+        .iter()
+        .filter(|c| c.owner().is_some_and(|o| o.jid == author))
+        .count();
+    let clans_member_len = clans
+        .iter()
+        .filter(|c| c.status_of(&author) == Some(&Status::Member))
+        .count();
 
     // Check if the author is already in too many clans
     if clans_member_len >= MAX_CLAN_MEMBERSHIP {
@@ -65,7 +93,9 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
     }
 
     // Save the clan to the database.
-    if let Err(e) = clan.save(&database).await { return Response::from(e); }
+    if let Err(e) = clan.save(&database).await {
+        return Response::from(e);
+    }
 
     Response::from(SUCCESS)
 }

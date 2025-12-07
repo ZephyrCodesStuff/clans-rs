@@ -1,7 +1,10 @@
 //! Request structs for the Admin endpoints
 use serde::Deserialize;
 
-use crate::structs::entities::{clan::{Clan, Platform}, player::{Jid, Player, Role, Status}};
+use crate::structs::entities::{
+    clan::{Clan, Platform},
+    player::{Jid, Player, Role, Status},
+};
 
 /// Request to create a clan.
 #[derive(Debug, Clone, Deserialize)]
@@ -28,14 +31,12 @@ impl From<(CreateClan, Jid)> for Clan {
         clan.tag = request.clan_tag;
         clan.platform = request.clan_platform;
 
-        clan.members = vec![
-            Player {
-                jid: author,
-                role: Role::Leader,
-                status: Status::Member,
-                ..Default::default()
-            }
-        ];
+        clan.members = vec![Player {
+            jid: author,
+            role: Role::Leader,
+            status: Status::Member,
+            ..Default::default()
+        }];
 
         clan
     }

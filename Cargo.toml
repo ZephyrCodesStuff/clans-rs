@@ -26,6 +26,7 @@ mongodb = "3.1.0"
 openssl = "0.10.68"
 pretty_env_logger = "0.5.0"
 rand = "0.8.5"
+regex = "1.12.2"
 serde = { version = "1.0.215", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 xml-rs = "0.8.23"
@@ -51,3 +52,6 @@ missing_docs_in_private_items = { level = "deny", priority = 1 }
 
 [lints.rust]
 unused_imports = "forbid"
+
+[features]
+admin = []

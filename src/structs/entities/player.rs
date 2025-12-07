@@ -7,17 +7,23 @@ use futures_util::StreamExt;
 use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::Database, structs::{responses::error::ErrorCode, ticket::Ticket}};
+use crate::{
+    database::Database,
+    structs::{
+        responses::error::ErrorCode,
+        ticket::{Ticket, DEFAULT_DOMAIN, DEFAULT_REGION},
+    },
+};
 
 use super::clan::Clan;
 
 /// A JID is an identifier composed of:
-/// 
+///
 /// - The player's username.
 /// - The region's ``PlayStation Network`` domain (a0, a1, ...)
 /// - The player's account region.
 /// - ``PlayStation Network``'s domain.
-/// 
+///
 /// Example: ``username@a1.us.np.playstation.net``
 #[derive(Debug, Default, Clone)]
 pub struct Jid {
@@ -34,15 +40,18 @@ pub struct Jid {
 impl Jid {
     /// Utility method to find every clan the player is in.
     pub async fn clans(&self, database: Data<Database>) -> Result<Vec<Clan>, ErrorCode> {
-        let cursor = match database.clans.find(doc! {
-            "members.jid": self.to_string()
-        })
-            .await.map_err(|_| ErrorCode::InternalServerError)
+        let cursor = match database
+            .clans
+            .find(doc! {
+                "members.jid": self.to_string()
+            })
+            .await
+            .map_err(|_| ErrorCode::InternalServerError)
         {
             Ok(clans) => clans,
             Err(e) => return Err(e),
         };
-    
+
         let clans: Vec<Clan> = cursor
             .filter_map(|clan| async move { clan.ok() })
             .collect()
@@ -74,7 +83,8 @@ impl TryFrom<String> for Jid {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let mut parts = value.split('@');
 
-        if parts.clone().count() != 2 { // username, a1.us.np.playstation.net
+        if parts.clone().count() != 2 {
+            // username, a1.us.np.playstation.net
             return Err("Invalid JID format.");
         }
 
@@ -83,29 +93,38 @@ impl TryFrom<String> for Jid {
 
         let mut parts = psn.split('.');
 
-        if parts.clone().count() != 5 { // a1, us, np, playstation, net
+        if parts.clone().count() != 5 {
+            // a1, us, np, playstation, net
             return Err("Invalid JID format.");
         }
 
         // Default to RPCN defaults: `un` and `br`
-        let mut domain = parts.next().unwrap_or("un").to_string();
-        let mut region = parts.next().unwrap_or("br").to_string();
-        
+        let mut domain = parts.next().unwrap_or(DEFAULT_DOMAIN).to_string();
+        let mut region = parts.next().unwrap_or(DEFAULT_REGION).to_string();
+
         if domain.is_empty() {
-            domain = "un".to_string();
+            domain = DEFAULT_DOMAIN.to_string();
         }
 
         if region.is_empty() {
-            region = "br".to_string();
+            region = DEFAULT_REGION.to_string();
         }
 
-        Ok(Self { username, domain, region })
+        Ok(Self {
+            username,
+            domain,
+            region,
+        })
     }
 }
 
 impl Display for Jid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}@{}.{}.np.playstation.net", self.username, self.domain, self.region)
+        write!(
+            f,
+            "{}@{}.{}.np.playstation.net",
+            self.username, self.domain, self.region
+        )
     }
 }
 
@@ -166,7 +185,7 @@ impl From<Jid> for ExtendedJid {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Role {
     /// The player's role is unknown.
-    /// 
+    ///
     /// ⚠️ **WARNING**: This will hide the player from the clan's member list.
     Unknown = 0,
 
@@ -180,7 +199,7 @@ pub enum Role {
     SubLeader = 3,
 
     /// The player is the leader of the clan.
-    /// 
+    ///
     /// NOTE: This will make them unable to leave the clan.
     Leader = 4,
 }
@@ -214,9 +233,9 @@ impl Display for Role {
 #[repr(u8)]
 pub enum Status {
     /// The player's status is unknown.
-    /// 
+    ///
     /// NOTE: This can be used in clan searches as a wildcard for any status.
-    /// 
+    ///
     /// ⚠️ **WARNING**: This will hide the player from the clan's member list.
     Unknown = 0,
 
@@ -257,14 +276,14 @@ pub struct Player {
     pub online_name: String,
 
     /// The player's description.
-    /// 
+    ///
     /// Currently it is unknown where this is displayed.
     pub description: String,
 
     /// The ``allowMsg`` flag determines whether the member allows receiving
     /// messages viewable in the system software, whenever a post has been
     /// made to the clan's announcement board.
-    /// 
+    ///
     /// The default value for ``allowMsg`` is ``false``.
     pub allow_msg: bool,
 

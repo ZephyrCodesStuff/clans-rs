@@ -1,10 +1,11 @@
 //! Request structs from the client.
 
-pub mod base;
-pub mod clans;
-pub mod members;
-pub mod blacklist;
-pub mod invites;
 pub mod announcements;
+pub mod base;
+pub mod blacklist;
+pub mod clans;
+pub mod invites;
+pub mod members;
 
+#[cfg(feature = "admin")]
 pub mod admin;

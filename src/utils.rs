@@ -22,6 +22,7 @@ pub mod xml_format {
     }
 }
 
+#[cfg(feature = "admin")]
 pub mod auth {
     //! Helpers for authenticating Admin requests.
 
@@ -53,7 +54,11 @@ pub mod auth {
                 actix_web::error::ErrorInternalServerError("Internal server error")
             })?;
 
-        if token.to_str().unwrap() != env_token {
+        let Ok(token_str) = token.to_str() else {
+            return Err(actix_web::error::ErrorBadRequest("Invalid token"));
+        };
+
+        if token_str != env_token {
             return Err(actix_web::error::ErrorUnauthorized("Invalid authorization"));
         }
 

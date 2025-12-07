@@ -7,6 +7,12 @@ use base64::Engine;
 use openssl::{ec::EcKey, hash::MessageDigest, pkey::PKey, sign::Verifier};
 use serde::{Deserialize, Deserializer};
 
+/// Default domain RPCN sets for players.
+pub const DEFAULT_DOMAIN: &str = "un";
+
+/// Default region RPCN sets for players.
+pub const DEFAULT_REGION: &str = "br";
+
 /// The version of the ticket format.
 ///
 /// It's either:
@@ -273,10 +279,10 @@ impl Ticket {
 
                 // If empty, default to RPCN defaults: `un` and `br`
                 if ticket.domain.is_empty() {
-                    ticket.domain = "un".to_string();
+                    ticket.domain = DEFAULT_DOMAIN.to_string();
                 }
                 if ticket.region.is_empty() {
-                    ticket.region = "br".to_string();
+                    ticket.region = DEFAULT_REGION.to_string();
                 }
 
                 let signature_id: &[u8; 4] = &bytes[0xB8..0xBC].try_into().unwrap();
@@ -383,8 +389,7 @@ impl Ticket {
         if let Signature::Emulator(_) = ticket.signature {
             let result = verifier
                 .verify(signature)
-                .map_err(|e| format!("Failed to verify signature: {e:?}"))
-                .unwrap();
+                .map_err(|_| "Failed to verify signature!")?;
 
             if !result {
                 return Err("Invalid signature");

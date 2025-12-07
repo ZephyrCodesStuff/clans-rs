@@ -3,7 +3,10 @@
 use serde::{Deserialize, Deserializer};
 
 use crate::structs::{
-    entities::{clan::{Clan, Id, Platform}, player::{Jid, Player, Role, Status}},
+    entities::{
+        clan::{Clan, Id, Platform},
+        player::{Jid, Player, Role, Status},
+    },
     ticket::Ticket,
 };
 
@@ -28,14 +31,12 @@ impl From<CreateClan> for Clan {
         clan.tag = request.tag;
         clan.platform = Platform::from(request.ticket.clone());
 
-        clan.members = vec![
-            Player {
-                jid: Jid::from(request.ticket),
-                role: Role::Leader,
-                status: Status::Member,
-                ..Default::default()
-            }
-        ];
+        clan.members = vec![Player {
+            jid: Jid::from(request.ticket),
+            role: Role::Leader,
+            status: Status::Member,
+            ..Default::default()
+        }];
 
         clan
     }
@@ -135,6 +136,47 @@ pub struct ClanSearchFilterName {
     /// The value of the operator.
     #[serde(rename = "value")]
     pub value: String,
+}
+
+impl ClanSearchFilterOperator {
+    /// Convert the operator to a BSON filter.
+    pub fn to_filter(&self, value: &str) -> mongodb::bson::Document {
+        use mongodb::bson::doc;
+
+        // Escape regex characters to prevent injection
+        let escaped_value = regex::escape(value);
+
+        match self {
+            // Case-insensitive exact match
+            Self::Equal => doc! {
+                "$regex": format!("^{escaped_value}$"),
+                "$options": "i"
+            },
+            Self::NotEqual => doc! {
+                "$not": {
+                    "$regex": format!("^{escaped_value}$"),
+                    "$options": "i"
+                }
+            },
+            // Current "GreaterThan" behavior: Starts With (Case Insensitive)
+            Self::GreaterThan | Self::GreaterThanOrEqual => doc! {
+                "$regex": format!("^{escaped_value}"),
+                "$options": "i"
+            },
+            // Current "LessThan" behavior: Ends With (Case Insensitive)
+            Self::LessThan | Self::LessThanOrEqual => doc! {
+                "$regex": format!("{escaped_value}$"),
+                "$options": "i"
+            },
+            // Contains (Case Insensitive)
+            Self::Like => doc! {
+                "$regex": escaped_value,
+                "$options": "i"
+            },
+            // All matches everything
+            Self::All => doc! {},
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for ClanSearchFilterOperator {
