@@ -149,29 +149,39 @@ impl ClanSearchFilterOperator {
         match self {
             // Case-insensitive exact match
             Self::Equal => doc! {
-                "$regex": format!("^{escaped_value}$"),
-                "$options": "i"
-            },
-            Self::NotEqual => doc! {
-                "$not": {
+                "name": {
                     "$regex": format!("^{escaped_value}$"),
                     "$options": "i"
                 }
             },
+            Self::NotEqual => doc! {
+                "name": {
+                    "$not": {
+                        "$regex": format!("^{escaped_value}$"),
+                        "$options": "i"
+                    }
+                }
+            },
             // Current "GreaterThan" behavior: Starts With (Case Insensitive)
             Self::GreaterThan | Self::GreaterThanOrEqual => doc! {
-                "$regex": format!("^{escaped_value}"),
-                "$options": "i"
+                "name": {
+                    "$regex": format!("^{escaped_value}"),
+                    "$options": "i"
+                }
             },
             // Current "LessThan" behavior: Ends With (Case Insensitive)
             Self::LessThan | Self::LessThanOrEqual => doc! {
-                "$regex": format!("{escaped_value}$"),
-                "$options": "i"
+                "name": {
+                    "$regex": format!("{escaped_value}$"),
+                    "$options": "i"
+                }
             },
             // Contains (Case Insensitive)
             Self::Like => doc! {
-                "$regex": escaped_value,
-                "$options": "i"
+                "name": {
+                    "$regex": escaped_value,
+                    "$options": "i"
+                }
             },
             // All matches everything
             Self::All => doc! {},
