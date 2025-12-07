@@ -1,27 +1,21 @@
-# Using the `rust-musl-builder` as base image, instead of
-# the official Rust toolchain
-FROM clux/muslrust:stable AS chef
-USER root
-RUN cargo install cargo-chef
+FROM rust:slim AS builder
+
+RUN apt-get update -y && \
+  apt-get install -y pkg-config make g++ libssl-dev && \
+  rustup target add x86_64-unknown-linux-gnu
+
+WORKDIR /app
+COPY . .
+
+RUN cargo build --release --target x86_64-unknown-linux-gnu
+
+# ------------------------------
+
+FROM gcr.io/distroless/cc
+
 WORKDIR /app
 
-FROM chef AS planner
-COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
+COPY --from=builder /app/keys /app/keys
+COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/clans-rs /app/clans-rs
 
-FROM chef AS builder
-COPY --from=planner /app/recipe.json recipe.json
-# Notice that we are specifying the --target flag!
-RUN cargo chef cook --release --target x86_64-unknown-linux-musl --recipe-path recipe.json
-COPY . .
-RUN cargo build --release --target x86_64-unknown-linux-musl --bin clans-rs
-
-FROM alpine AS runtime
-RUN addgroup -S myuser && adduser -S myuser -G myuser
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/clans-rs /clans-rs
-
-# Copy the `keys/` folder with the public keys
-COPY keys/ /keys/
-
-USER myuser
-CMD ["/clans-rs"]
+ENTRYPOINT [ "/app/clans-rs" ]
