@@ -4,27 +4,45 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: clans-api
     environment:
       - HOST=0.0.0.0
       - PORT=8080
       - RUST_LOG=${LOG_LEVEL:-info}
-      - MONGO_URI=mongodb://clans-mongo:27017/clans
+      - MONGO_URI=mongodb://mongo:27017/clans
       - ADMIN_TOKEN=${ADMIN_TOKEN}
     ports:
       - "8080:8080"
     networks:
       - clans
     depends_on:
-      - clans-mongo
+      - mongo
 
-  clans-mongo:
+  mongo:
     image: mongo:latest
-    container_name: clans-mongo
+    ports:
+      - "27017:27017"
     networks:
       - clans
     volumes:
       - clans-data:/data/db
+  
+  nginx:
+    image: nginx:mainline-alpine
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - clans
+    depends_on:
+      - clans
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+
+      # NOTE: change this to a directory containing your `privkey.pem` and `fullchain.pem`.
+      #       Not doing this will panic the container on startup.
+      #
+      #       Also, change the `server_name` in the `nginx.conf` to your domain.
+      - ./certs:/etc/nginx/certs:ro
 
 volumes:
   clans-data:
