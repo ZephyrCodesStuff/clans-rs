@@ -38,7 +38,7 @@ async fn main() -> std::io::Result<()> {
 
     let database = Database::init().await;
 
-    log::info!("Starting server at {}:{}", host, port);
+    log::info!("Starting server at {host}:{port}");
 
     HttpServer::new(move || {
         App::new()

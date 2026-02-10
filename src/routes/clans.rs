@@ -74,7 +74,7 @@ pub async fn get_clan_list(
     {
         Ok(player) => player,
         Err(e) => {
-            log::error!("Failed to look-up player `{}` in the database: {}", jid, e);
+            log::error!("Failed to look-up player `{jid}` in the database: {e}");
             return Response::error(ErrorCode::InternalServerError);
         }
     };
@@ -82,8 +82,8 @@ pub async fn get_clan_list(
     // Store the player's Jid in the database, if it doesn't exist
     if player.is_none() {
         match database.players.insert_one(jid_ext).await {
-            Ok(_) => log::info!("Inserted player `{}` into the database", jid),
-            Err(e) => log::error!("Failed to log player `{}` into the database: {}", jid, e),
+            Ok(_) => log::info!("Inserted player `{jid}` into the database"),
+            Err(e) => log::error!("Failed to log player `{jid}` into the database: {e}"),
         }
     }
 
@@ -103,7 +103,7 @@ pub async fn get_clan_list(
     while let Some(clan) = clans.next().await {
         match clan {
             Ok(clan) => data.push(clan),
-            Err(e) => log::error!("Error while fetching clan: {}", e),
+            Err(e) => log::error!("Error while fetching clan: {e}"),
         }
     }
 

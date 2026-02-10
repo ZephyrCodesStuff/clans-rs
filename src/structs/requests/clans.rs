@@ -69,9 +69,10 @@ pub struct ClanSearch {
 }
 
 /// Enum of operators to apply to a clan search filter.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum ClanSearchFilterOperator {
     /// Everything.
+    #[default]
     All,
 
     /// Name equal to.
@@ -94,12 +95,6 @@ pub enum ClanSearchFilterOperator {
 
     /// Name contains.
     Like,
-}
-
-impl Default for ClanSearchFilterOperator {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 impl TryFrom<&str> for ClanSearchFilterOperator {

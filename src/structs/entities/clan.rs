@@ -1,6 +1,6 @@
 //! These structs represent the data of a clan in the game,
 //! as completely as possible.
-//! 
+//!
 //! They are what's stored into the database.
 
 use std::fmt::Display;
@@ -11,9 +11,18 @@ use mongodb::bson::doc;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::{database::Database, structs::{responses::error::ErrorCode, ticket::{Signature, Ticket}}};
+use crate::{
+    database::Database,
+    structs::{
+        responses::error::ErrorCode,
+        ticket::{Signature, Ticket},
+    },
+};
 
-use super::{announcement::Announcement, player::{Jid, Player, Role, Status}};
+use super::{
+    announcement::Announcement,
+    player::{Jid, Player, Role, Status},
+};
 
 /// Maximum number of clans that can exist in the game.
 const MAX_CLAN_COUNT: u32 = 1_000_000;
@@ -34,18 +43,19 @@ pub const MAX_CLAN_DESCRIPTION_LENGTH: usize = 255;
 pub const MAX_CLAN_OWNERSHIP: usize = 2;
 
 /// A clan ID.
-/// 
+///
 /// Should be limited to [`MAX_CLAN_COUNT`], as the game
 /// rejects any ID that surpasses it.
 pub type Id = u32;
 
 /// A platform the game can be played on.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Default)]
 pub enum Platform {
     /// The ``PlayStation`` 3 console.
+    #[default]
     Console,
     /// The RPCS3 emulator.
-    Emulator
+    Emulator,
 }
 
 #[allow(clippy::match_same_arms)]
@@ -55,7 +65,7 @@ impl From<String> for Platform {
             "emulator" | "rpcs3" | "rpcn" | "pc" => Self::Emulator,
             "console" | "psn" | "ps3" => Self::Console,
 
-            _ => Self::Console
+            _ => Self::Console,
         }
     }
 }
@@ -63,7 +73,7 @@ impl From<String> for Platform {
 impl<'a> Deserialize<'a> for Platform {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'a>
+        D: serde::Deserializer<'a>,
     {
         let platform = String::deserialize(deserializer)?;
         Ok(Self::from(platform))
@@ -76,12 +86,6 @@ impl Display for Platform {
             Self::Console => write!(f, "[PS3]"),
             Self::Emulator => write!(f, "[PC]"),
         }
-    }
-}
-
-impl Default for Platform {
-    fn default() -> Self {
-        Self::Console
     }
 }
 
@@ -101,28 +105,28 @@ pub struct Clan {
     /// Unique identifier of the clan. Should not be changed manually,
     /// because values outside the range of [`MAX_CLAN_COUNT`] **will**
     /// halt the game.
-    /// 
+    ///
     /// See: [`Id`](type.Id.html)
     id: Id,
-    
+
     /// Displayed name of the clan.
-    /// 
+    ///
     /// This appears below the player's name.
     pub name: String,
 
     /// Tag used to identify the clan.
-    /// 
+    ///
     /// NOTE: This is **not** what appears below the player's name.
     pub tag: String,
 
     /// Description of the clan.
-    /// 
+    ///
     /// This appears when the player clicks on the clan,
     /// and selects to view the clan's information.
     pub description: String,
 
     /// Members currenty in the clan.
-    /// 
+    ///
     /// This will always include, at least, the clan's leader.
     pub members: Vec<Player>,
 
@@ -135,10 +139,10 @@ pub struct Clan {
     /// Creation date of the clan, in UTC.
     #[serde(with = "chrono::serde::ts_seconds")]
     pub date_created: DateTime<Utc>,
-    
+
     /// If this flag is `true`, then the clan should
     /// automatically accept any player that requests to join.
-    /// 
+    ///
     /// Currently it is unknown how one would set this flag, from the game.
     pub auto_accept: bool,
 
@@ -155,7 +159,7 @@ pub struct Clan {
     pub size: u32,
 
     /// The platform the clan was created for.
-    /// 
+    ///
     /// Members of the opposite platform should NOT be allowed to join it,
     /// as the game will crash trying to fetch the clan leader.
     pub platform: Platform,
@@ -185,22 +189,25 @@ impl Default for Clan {
     }
 }
 
-
 impl Clan {
     /// Fetch the clan from the database.
     pub async fn resolve(id: Id, database: &Data<Database>) -> Result<Self, ErrorCode> {
-        database.clans.find_one(doc! { "id": id })
+        database
+            .clans
+            .find_one(doc! { "id": id })
             .await
             .map_err(|_| ErrorCode::InternalServerError)?
             .ok_or(ErrorCode::NoSuchClan)
     }
 
     /// Save the clan in the database.
-    /// 
+    ///
     /// This will replace the clan's document altogether and,
     /// if the clan doesn't exist, it will create a new one.
     pub async fn save(&self, database: &Data<Database>) -> Result<(), ErrorCode> {
-        database.clans.replace_one(doc! { "id": self.id }, self.clone())
+        database
+            .clans
+            .replace_one(doc! { "id": self.id }, self.clone())
             .upsert(true) // Create the document if it doesn't exist
             .await
             .map_err(|_| ErrorCode::InternalServerError)
@@ -209,7 +216,9 @@ impl Clan {
 
     /// Delete the clan from the database.
     pub async fn delete(&self, database: &Data<Database>) -> Result<(), ErrorCode> {
-        database.clans.delete_one(doc! { "id": self.id })
+        database
+            .clans
+            .delete_one(doc! { "id": self.id })
             .await
             .map_err(|_| ErrorCode::InternalServerError)
             .map(|_| ())
@@ -221,30 +230,32 @@ impl Clan {
     }
 
     /// Returns the owner of the clan.
-    /// 
+    ///
     /// Ideally, this should never be `None`.
     pub fn owner(&self) -> Option<&Player> {
-        self.members.iter()
+        self.members
+            .iter()
             .find(|player| player.role == Role::Leader)
     }
 
     /// Returns the role of the given player, in the clan.
     pub fn role_of(&self, jid: &Jid) -> Option<&Role> {
-        self.members.iter()
+        self.members
+            .iter()
             .find(|player| player.jid == *jid)
             .map(|player| &player.role)
     }
 
     /// Returns the status of the given player, in the clan.
     pub fn status_of(&self, jid: &Jid) -> Option<&Status> {
-        self.members.iter()
+        self.members
+            .iter()
             .find(|player| player.jid == *jid)
             .map(|player| &player.status)
-        }
-        
+    }
+
     /// Returns whether a player is blacklisted from the clan.
     pub fn is_blacklisted(&self, jid: &Jid) -> bool {
-        self.blacklist.iter()
-            .any(|blacklisted| blacklisted == jid)
+        self.blacklist.iter().any(|blacklisted| blacklisted == jid)
     }
 }
