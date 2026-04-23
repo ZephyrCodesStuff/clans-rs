@@ -61,11 +61,11 @@ pub async fn create_clan(database: Data<Database>, mut data: Json<CreateClan>) -
     };
 
     // If the player was not found, return an error
-    if author.is_none() {
+    let Some(author) = author else {
         return Response::from(ErrorCode::InvalidNpId);
-    }
+    };
 
-    let author: Jid = author.unwrap().into();
+    let author: Jid = author.into();
     let clan = Clan::from((data.into_inner(), author.clone()));
 
     // Check the clans the author is in

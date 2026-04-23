@@ -46,7 +46,10 @@ impl Jid {
                 "members.jid": self.to_string()
             })
             .await
-            .map_err(|_| ErrorCode::InternalServerError)
+            .map_err(|e| {
+                log::error!("Failed to find clans for player `{self}`: {e}");
+                ErrorCode::InternalServerError
+            })
         {
             Ok(clans) => clans,
             Err(e) => return Err(e),

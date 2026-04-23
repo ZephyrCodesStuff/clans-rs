@@ -196,7 +196,10 @@ impl Clan {
             .clans
             .find_one(doc! { "id": id })
             .await
-            .map_err(|_| ErrorCode::InternalServerError)?
+            .map_err(|e| {
+                log::error!("Failed to resolve clan `{id}`: {e}");
+                ErrorCode::InternalServerError
+            })?
             .ok_or(ErrorCode::NoSuchClan)
     }
 
@@ -210,7 +213,10 @@ impl Clan {
             .replace_one(doc! { "id": self.id }, self.clone())
             .upsert(true) // Create the document if it doesn't exist
             .await
-            .map_err(|_| ErrorCode::InternalServerError)
+            .map_err(|e| {
+                log::error!("Failed to save clan `{}`: {e}", self.id);
+                ErrorCode::InternalServerError
+            })
             .map(|_| ())
     }
 
@@ -220,7 +226,10 @@ impl Clan {
             .clans
             .delete_one(doc! { "id": self.id })
             .await
-            .map_err(|_| ErrorCode::InternalServerError)
+            .map_err(|e| {
+                log::error!("Failed to delete clan `{}`: {e}", self.id);
+                ErrorCode::InternalServerError
+            })
             .map(|_| ())
     }
 

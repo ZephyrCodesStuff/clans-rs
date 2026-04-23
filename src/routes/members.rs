@@ -142,8 +142,18 @@ pub async fn change_member_role(database: Data<Database>, req: Request<ChangeMem
 
     // Change the player's role
     let role = Role::from(req.request.role);
-    let index = clan.members.iter().position(|p| p.jid == target).unwrap();
-    clan.members.get_mut(index).unwrap().role = role;
+    let Some(index) = clan.members.iter().position(|p| p.jid == target) else {
+        log::error!("Failed to find player `{target}` in clan `{}`", clan.id());
+        return Response::error(ErrorCode::NoSuchClanMember);
+    };
+
+    // NOTE: this should never happen since the index is guaranteed to be in-bounds by the previous call
+    let Some(member) = clan.members.get_mut(index) else {
+        log::error!("Failed to find player `{target}` in clan `{}` (index out of bounds?)", clan.id());
+        return Response::error(ErrorCode::NoSuchClanMember);
+    };
+
+    member.role = role;
 
     // Update the clan
     if let Err(e) = clan.save(&database).await { return Response::error(e); }
@@ -171,7 +181,11 @@ pub async fn update_member_info(database: Data<Database>, req: Request<UpdateMem
     }
 
     // Update the player's info
-    let member = clan.members.iter_mut().find(|p| p.jid == author).unwrap();
+    let Some(member) = clan.members.iter_mut().find(|p| p.jid == author) else {
+        log::error!("Failed to find player `{author}` in clan `{}`", clan.id());
+        return Response::error(ErrorCode::NoSuchClanMember);
+    };
+
     member.online_name = req.request.onlinename;
     member.description = req.request.description;
     member.allow_msg = req.request.allowmsg;

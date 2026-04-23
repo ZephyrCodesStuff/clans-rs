@@ -132,7 +132,11 @@ pub async fn accept_invitation(database: Data<Database>, req: Request<AcceptInvi
     }
 
     // Accept the invitation
-    let player = clan.members.iter_mut().find(|p| p.jid == jid).unwrap();
+    let Some(player) = clan.members.iter_mut().find(|p| p.jid == jid) else {
+        log::error!("Failed to find player `{jid}` in clan `{}`", clan.id());
+        return Response::error(ErrorCode::NoSuchClanMember);
+    };
+
     player.status = Status::Member;
     player.role = Role::Member;
 
@@ -290,7 +294,11 @@ pub async fn accept_membership_request(database: Data<Database>, req: Request<Ac
     }
 
     // Accept the request
-    let player = clan.members.iter_mut().find(|p| p.jid == req.request.jid).unwrap();
+    let Some(player) = clan.members.iter_mut().find(|p| p.jid == req.request.jid) else {
+        log::error!("Failed to find player `{}` in clan `{}`", req.request.jid, clan.id());
+        return Response::error(ErrorCode::NoSuchClanMember);
+    };
+
     player.status = Status::Member;
     player.role = Role::Member;
 

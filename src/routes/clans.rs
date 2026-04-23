@@ -44,11 +44,11 @@ pub async fn get_clan_info(
         return Response::error(ErrorCode::InternalServerError);
     };
 
-    if clan.is_none() {
+    let Some(clan) = clan else {
         return Response::error(ErrorCode::NoSuchClan);
-    }
+    };
 
-    let info = ClanInfo::from(clan.unwrap());
+    let info = ClanInfo::from(clan);
     Response::success(Content::Item(info))
 }
 
@@ -155,11 +155,11 @@ pub async fn clan_search(
         //
         // We want clans of all platforms to be visible, but not cross-joinable,
         // so we do support searching but will block joining in the other endpoints.
-        if value.ends_with("[ps3]") {
-            value = value.strip_suffix("[ps3]").unwrap().trim().to_string();
+        if let Some(stripped) = value.strip_suffix("[ps3]") {
+            value = stripped.trim().to_string();
             platform = Some("Console");
-        } else if value.ends_with("[pc]") {
-            value = value.strip_suffix("[pc]").unwrap().trim().to_string();
+        } else if let Some(stripped) = value.strip_suffix("[pc]") {
+            value = stripped.trim().to_string();
             platform = Some("Emulator");
         }
 

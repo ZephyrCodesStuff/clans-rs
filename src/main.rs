@@ -34,9 +34,29 @@ async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| String::from("8080"))
         .parse::<u16>()
-        .expect("PORT must be a number");
+        .unwrap_or_else(|_| {
+            log::error!("PORT must be a number. Defaulting to 8080");
+            8080
+        });
 
-    let database = Database::init().await;
+    // Try to initialize the database in ``DB_ATTEMPTS_MAX`` attempts.
+    let database = loop {
+        match Database::try_init().await {
+            Ok(db) => break db,
+            Err(err) => {
+                let attempt = database::DB_ATTEMPT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+                log::error!("Failed to initialize database: {err}");
+
+                if attempt >= database::DB_ATTEMPTS_MAX as usize {
+                    log::error!("Maximum number of attempts reached");
+                    std::process::exit(1);
+                }
+
+                log::info!("Retrying in {:?}", database::DB_RETRY_DELAY);
+                actix_web::rt::time::sleep(database::DB_RETRY_DELAY).await;
+            }
+        }
+    };
 
     log::info!("Starting server at {host}:{port}");
 

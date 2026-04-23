@@ -7,6 +7,15 @@ use mongodb::{bson::doc, options::IndexOptions, IndexModel};
 
 use crate::structs::entities::{clan::Clan, player::ExtendedJid};
 
+/// Maximum number of attempts to connect to the database.
+pub const DB_ATTEMPTS_MAX: u8 = 5;
+
+/// Delay between attempts to connect to the database.
+pub const DB_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// Current attempt to connect to the database.
+pub static DB_ATTEMPT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
 /// Database utility struct.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -32,11 +41,13 @@ impl Database {
     /// ## Panic
     /// This function will panic if the ``MONGO_URI`` environment variable
     /// is not set, or if the connection to the database fails.
-    pub async fn init() -> Self {
+    pub async fn try_init() -> Result<Self, mongodb::error::Error> {
+        log::info!("Trying to connect to the database...");
+
         let mongo_uri = std::env::var("MONGO_URI")
             .unwrap_or_else(|_| String::from("mongodb://localhost:27017"));
 
-        let client = mongodb::Client::with_uri_str(&mongo_uri).await.unwrap();
+        let client = mongodb::Client::with_uri_str(&mongo_uri).await?;
         let database = client.default_database()
             .unwrap_or_else(|| client.database("clans"));
 
@@ -51,14 +62,14 @@ impl Database {
                 .build())
             .build();
 
-        clans.create_index(index).await.unwrap();
+        clans.create_index(index).await?;
 
         let players = database.collection("players");
 
-        Self {
+        Ok(Self {
             database,
             clans,
             players,
-        }
+        })
     }
 }
